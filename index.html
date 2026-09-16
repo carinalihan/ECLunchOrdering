@@ -89,7 +89,6 @@
                                 <th class="py-3 px-4 text-center w-16">序號</th>
                                 <th class="py-3 px-4">名字</th>
                                 <th class="py-3 px-4">主餐</th>
-                                <th class="py-3 px-4 text-center w-16">圖片</th>
                                 <th class="py-3 px-4 text-right w-24">價格</th>
                                 <th class="py-3 px-4 text-center w-24">已付款</th>
                                 <th class="py-3 px-4 text-center w-20">操作</th>
@@ -159,15 +158,18 @@
                 </div>
                 <ul class="list-disc pl-4 space-y-1 text-blue-800/90">
                     <li>點擊「新增訂單」可以填寫名字與選擇主餐。</li>
-                    <li>點擊右側「設定菜單/圖片」可以上傳或輸入便當店菜單圖片網址。</li>
+                    <li>點擊右側「設定菜單/圖片」可以設定菜單網址，或另外上傳菜單圖片。</li>
                     <li>勾選「已付款」可即時標記收錢狀態。</li>
                 </ul>
             </div>
 
             <!-- Edit Current Date Button at Bottom Right -->
-            <div class="flex justify-end pt-2">
+            <div class="flex justify-end gap-2 pt-2">
                 <button onclick="openEditCurrentDateModal()" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-blue-50 cursor-pointer">
                     <i class="fa-solid fa-pen-to-square"></i> 編輯當日內容
+                </button>
+                <button onclick="deleteCurrentDate()" class="text-rose-600 hover:text-rose-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-rose-50 cursor-pointer">
+                    <i class="fa-solid fa-trash"></i> 刪除日期
                 </button>
             </div>
 
@@ -198,7 +200,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">價格 (NT$)</label>
-                    <input type="number" id="inputPrice" required value="80" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <input type="number" id="inputPrice" required value="80" readonly class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 cursor-not-allowed text-sm">
                 </div>
                 <div class="flex items-center gap-2 pt-1">
                     <input type="checkbox" id="inputPaid" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
@@ -216,19 +218,20 @@
     <div id="editMenuModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-800">設定菜單與店家菜單圖片</h3>
+                <h3 class="text-lg font-bold text-slate-800">設定菜單網址與店家菜單圖片</h3>
                 <button onclick="closeEditMenuModal()" class="text-slate-400 hover:text-slate-600 p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
             <form onsubmit="handleEditMenuSubmit(event)" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">上傳店家菜單圖片檔案</label>
-                    <input type="file" id="menuImageFile" accept="image/*" onchange="handleMenuImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單網址 (URL)</label>
+                    <input type="url" id="menuUrlInput" placeholder="https://example.com/menu" class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <p class="text-xs text-slate-400 mt-1">只儲存網址，不會顯示圖片預覽。</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">或輸入菜單圖片網址 (URL)</label>
-                    <input type="text" id="menuImageUrlInput" placeholder="https://example.com/menu.jpg" class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="previewMenuImageUrl(this.value)">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填）</label>
+                    <input type="file" id="menuImageFile" accept="image/*" onchange="handleMenuImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
                     <input type="hidden" id="menuImageUrl" value="">
                     <div id="menuImagePreviewContainer" class="mt-2 hidden">
                         <img id="menuImagePreview" src="" alt="菜單預覽" class="w-32 h-32 object-cover rounded-xl border border-slate-200 shadow-sm cursor-pointer" onclick="openLightbox(this.src)">
@@ -351,6 +354,7 @@
                     restaurant: "福隆便當 02-8982-0267",
                     collector: "育靜",
                     title: "良興電商開飯",
+                    menuUrl: "",
                     menuImageUrl: "",
                     menu: [
                         { name: "招牌便當", price: 80 },
@@ -402,6 +406,7 @@
             Object.keys(state.dates || {}).forEach(k => {
                 if (!state.dates[k].restaurant) state.dates[k].restaurant = "福隆便當 02-8982-0267";
                 if (!state.dates[k].collector) state.dates[k].collector = "育靜";
+                if (state.dates[k].menuUrl === undefined) state.dates[k].menuUrl = "";
                 if (state.dates[k].menuImageUrl === undefined) state.dates[k].menuImageUrl = "";
             });
 
@@ -546,8 +551,11 @@
             document.getElementById('headerCollector').innerText = activeData.collector || "育靜";
 
             const viewMenuBtn = document.getElementById('viewMenuBtn');
-            if (activeData.menuImageUrl) {
+            if (activeData.menuImageUrl || activeData.menuUrl) {
                 viewMenuBtn.classList.remove('hidden');
+                viewMenuBtn.innerHTML = activeData.menuUrl
+                    ? '<i class="fa-solid fa-link"></i> 開啟店家菜單'
+                    : '<i class="fa-solid fa-image"></i> 查看店家菜單';
             } else {
                 viewMenuBtn.classList.add('hidden');
             }
@@ -596,7 +604,6 @@
                         <td class="py-3 px-4 text-center font-medium text-slate-500">${index + 1}</td>
                         <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(order.name)}</td>
                         <td class="py-3 px-4 text-slate-700">${escapeHtml(order.dish)}</td>
-                        <td class="py-3 px-4 text-center text-slate-300 text-xs">-</td>
                         <td class="py-3 px-4 text-right font-medium text-slate-700">$${order.price}</td>
                         <td class="py-3 px-4 text-center">
                             <input type="checkbox" ${order.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
@@ -626,7 +633,9 @@
 
         window.openMenuLightbox = function() {
             const activeData = getActiveDateObj();
-            if (activeData.menuImageUrl) {
+            if (activeData.menuUrl) {
+                window.open(activeData.menuUrl, '_blank', 'noopener,noreferrer');
+            } else if (activeData.menuImageUrl) {
                 openLightbox(activeData.menuImageUrl);
             }
         };
@@ -661,8 +670,8 @@
 
         window.openEditMenuModal = function() {
             const activeData = getActiveDateObj();
+            document.getElementById('menuUrlInput').value = activeData.menuUrl || '';
             document.getElementById('menuImageUrl').value = activeData.menuImageUrl || '';
-            document.getElementById('menuImageUrlInput').value = activeData.menuImageUrl || '';
             if (activeData.menuImageUrl) {
                 document.getElementById('menuImagePreview').src = activeData.menuImageUrl;
                 document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
@@ -690,26 +699,16 @@
             reader.onload = function(e) {
                 const base64String = e.target.result;
                 document.getElementById('menuImageUrl').value = base64String;
-                document.getElementById('menuImageUrlInput').value = base64String;
                 document.getElementById('menuImagePreview').src = base64String;
                 document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
             };
             reader.readAsDataURL(file);
         };
 
-        window.previewMenuImageUrl = function(url) {
-            document.getElementById('menuImageUrl').value = url;
-            if (url) {
-                document.getElementById('menuImagePreview').src = url;
-                document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
-            } else {
-                document.getElementById('menuImagePreviewContainer').classList.add('hidden');
-            }
-        };
-
         window.handleEditMenuSubmit = function(event) {
             event.preventDefault();
             const activeData = getActiveDateObj();
+            const menuUrl = document.getElementById('menuUrlInput').value.trim();
             const menuImageUrl = document.getElementById('menuImageUrl').value;
             const rawText = document.getElementById('menuItemsTextarea').value;
 
@@ -729,6 +728,7 @@
             if (newMenu.length > 0) {
                 activeData.menu = newMenu;
             }
+            activeData.menuUrl = menuUrl;
             activeData.menuImageUrl = menuImageUrl;
 
             closeEditMenuModal();
@@ -769,7 +769,8 @@
                 restaurant: restaurant,
                 collector: collector,
                 title: inheritedTitle,
-                menuImageUrl: "", // 依需求：新增日期時預設空白
+                menuUrl: activeData.menuUrl || "",
+                menuImageUrl: "", // 新增日期時圖片預設空白
                 menu: inheritedMenu,
                 orders: []
             };
@@ -853,6 +854,30 @@
             saveLocalState();
             syncStateToFirestore();
             renderApp();
+        };
+
+        window.deleteCurrentDate = function() {
+            const dateIds = Object.keys(appState.dates || {});
+            const currentId = appState.currentDateId;
+            const currentData = getActiveDateObj();
+
+            if (dateIds.length <= 1) {
+                showToast("至少要保留一個訂餐日期，無法刪除！");
+                return;
+            }
+
+            if (!confirm(`確定要刪除「${currentData.name || '本日'}」嗎？\n\n這一天的訂單、菜單與設定都會一起刪除。`)) {
+                return;
+            }
+
+            delete appState.dates[currentId];
+            const remainingIds = Object.keys(appState.dates);
+            appState.currentDateId = remainingIds[remainingIds.length - 1];
+
+            saveLocalState();
+            syncStateToFirestore();
+            renderApp();
+            showToast("已刪除當日訂餐資料");
         };
 
         window.deleteOrder = function(index) {
