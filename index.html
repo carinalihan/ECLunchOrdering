@@ -366,7 +366,7 @@ let appState = {
             }
         };
 
-        async         async function initFirebase() {
+        async function initFirebase() {
             // 保留原本函式名稱，避免影響其他程式。
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
                 console.warn("尚未設定 Google Apps Script URL，目前使用本機資料。");
