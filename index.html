@@ -718,9 +718,9 @@
                         <td class="py-3 px-4 text-slate-700">${escapeHtml(order.dish)}</td>
                         <td class="py-3 px-4 text-left text-slate-500 max-w-[180px]">${escapeHtml(order.note || '') || '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3 px-4 text-right font-medium text-slate-700">$${order.price}</td>
-                        <td class="py-3 px-4 text-center relative w-28">
+                        <td class="py-3 px-4 text-center relative w-36 min-w-[144px]">
                             <input type="checkbox" ${order.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer" title="${order.paid ? '已付款' : '尚未付款'}">
-                            <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-white/90 rounded-md">
                                 <button onclick="editOrder(${index})" class="p-1.5 text-slate-400 hover:text-blue-600 transition" title="編輯">
                                     <i class="fa-solid fa-pen text-xs"></i>
                                 </button>
