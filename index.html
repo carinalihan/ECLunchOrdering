@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>良興電商開飯</title>
+    <title>良興電商 午餐食刻！</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -22,8 +22,8 @@
                     <i class="fa-solid fa-utensils"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight" id="headerTitle">良興電商開飯</h1>
-                    <p class="text-blue-100 text-sm">E-Commerce 午餐食刻</p>
+                    <h1 class="text-2xl font-bold tracking-tight" id="headerTitle">良興電商 午餐食刻！</h1>
+                    <p class="text-blue-100 text-sm">E-Commerce Lunch Ordering</p>
                 </div>
             </div>
 
@@ -356,7 +356,7 @@
     </div>
 
     <!-- Edit Menu Master Modal -->
-    <div id="menuMasterEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
+    <div id="menuMasterEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
             <div class="flex justify-between items-center mb-4">
                 <div>
@@ -399,14 +399,14 @@
 
     <script>
                 // ==========================================
-        // 良興電商開飯｜Google Sheet 同步設定
+        // 良興電商 午餐食刻！｜Google Sheet 同步設定
         // ==========================================
         // 完成 Google Apps Script 後，把 Web App URL 貼在這裡。
         const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqD28FgS6u8BI6Z3dEo_Kzv4h1S58jJdd7Fn6fQifmAp_vg3joJEizg4daq5PxJ8axOA/exec";
 
 
         // ==========================================
-        // 良興電商開飯｜應用程式資料
+        // 良興電商 午餐食刻！｜應用程式資料
         // ==========================================
         // 保留原本的初始資料，Google Sheet 讀取成功後會自動覆蓋。
         let appState = {
@@ -418,7 +418,7 @@
                     deadline: "9/8(二) 09:40 結單",
                     restaurant: "福隆便當 02-8982-0267",
                     collector: "育靜",
-                    title: "良興電商開飯",
+                    title: "良興電商 午餐食刻！",
                     menuUrl: "",
                     menuImageUrl: "",
                     menu: [
@@ -643,7 +643,7 @@
         window.renderApp = function() {
             const activeData = getActiveDateObj();
 
-            document.getElementById('headerTitle').innerText = activeData.title || "良興電商開飯";
+            document.getElementById('headerTitle').innerText = activeData.title || "良興電商 午餐食刻！";
             document.getElementById('headerDeadline').innerText = activeData.deadline || "";
             document.getElementById('headerRestaurant').innerText = activeData.restaurant || "福隆便當 02-8982-0267";
             document.getElementById('headerCollector').innerText = activeData.collector || "育靜";
@@ -1042,13 +1042,19 @@
         };
 
         window.openNewMenuMasterModal = function() {
+            // 從「全部菜單」建立新菜單時，先關閉清單，再開啟編輯視窗，避免兩個 Modal 疊在一起造成按鈕看似沒反應。
+            const libraryModal = document.getElementById('menuLibraryModal');
+            const masterModal = document.getElementById('menuMasterEditModal');
+            if (libraryModal) libraryModal.classList.add('hidden');
+
             document.getElementById('menuMasterModalTitle').innerText = '建立新菜單';
             document.getElementById('menuMasterId').value = '';
             document.getElementById('menuMasterRestaurant').value = '';
             document.getElementById('menuMasterUrl').value = '';
             document.getElementById('menuMasterItems').value = '';
             document.getElementById('menuMasterSyncDates').checked = false;
-            document.getElementById('menuMasterEditModal').classList.remove('hidden');
+            masterModal.classList.remove('hidden');
+            document.getElementById('menuMasterRestaurant').focus();
         };
 
         window.editMenuMaster = function(id) {
@@ -1130,7 +1136,7 @@
             const inheritedMenu = template
                 ? JSON.parse(JSON.stringify(template.menu || []))
                 : JSON.parse(JSON.stringify(activeData.menu || []));
-            const inheritedTitle = activeData.title || "良興電商開飯";
+            const inheritedTitle = activeData.title || "良興電商 午餐食刻！";
 
             appState.dates[dateId] = {
                 name: dateName,
