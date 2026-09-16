@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>良興電商開飯</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-blue-600 p-2.5 rounded-xl shadow font-bold text-xl">
+                    <i class="fa-solid fa-utensils"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight" id="headerTitle">良興電商開飯</h1>
+                    <p class="text-blue-100 text-sm">E-Commerce 午餐食刻</p>
+                </div>
+            </div>
+
+            <!-- Prominent Restaurant & Collector Banner in Center/Header -->
+            <div class="flex flex-wrap items-center justify-center gap-3 bg-blue-700/80 px-5 py-2.5 rounded-2xl border border-blue-400/30 shadow-inner">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-store text-yellow-300 text-lg"></i>
+                    <span id="headerRestaurant" class="text-lg font-bold text-white tracking-wide">福隆便當 02-8982-0267</span>
+                </div>
+                <div class="text-blue-200 text-sm border-l border-blue-400/40 pl-3 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wallet text-blue-200"></i>
+                    <span>收錢：<strong id="headerCollector" class="text-white font-semibold">育靜</strong></span>
+                </div>
+                <div class="text-blue-200 text-sm border-l border-blue-400/40 pl-3 flex items-center gap-1.5">
+                    <i class="fa-regular fa-clock text-blue-200"></i>
+                    <span id="headerDeadline">9/8(二) 09:40 結單</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Top right actions removed -->
+            </div>
+        </div>
+    </header>
+
+    <div class="bg-white border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between overflow-x-auto py-2.5 gap-2">
+            <div id="dateTabsContainer" class="flex items-center gap-2 overflow-x-auto py-1">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button onclick="openNewDateModal()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm border border-blue-200 transition flex items-center gap-1">
+                    <i class="fa-solid fa-calendar-plus"></i> 新增日期
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Order Form & Table (Col 8) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+
+            <!-- Action Bar -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-plus"></i> 新增訂單
+                    </button>
+                    <!-- View Menu Button if menu image exists -->
+                    <button id="viewMenuBtn" onclick="openMenuLightbox()" class="hidden bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium px-4 py-2.5 rounded-xl border border-emerald-200 transition flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-image"></i> 查看店家菜單
+                    </button>
+                </div>
+            </div>
+
+            <!-- Orders Table Container -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider font-semibold">
+                                <th class="py-3 px-4 text-center w-16">序號</th>
+                                <th class="py-3 px-4">名字</th>
+                                <th class="py-3 px-4">主餐</th>
+                                <th class="py-3 px-4 text-center w-16">圖片</th>
+                                <th class="py-3 px-4 text-right w-24">價格</th>
+                                <th class="py-3 px-4 text-center w-24">已付款</th>
+                                <th class="py-3 px-4 text-center w-20">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-clipboard-list text-4xl mb-2"></i>
+                    <p>目前還沒有人填寫訂單，點擊上方按鈕新增！</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Summary Cards & Breakdown (Col 4) -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+
+            <!-- Total Amount Card -->
+            <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-6 rounded-2xl shadow-md flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium">總金額 (Total)</p>
+                    <h2 class="text-4xl font-extrabold mt-1" id="grandTotalAmt">$0</h2>
+                </div>
+                <div class="bg-white/15 p-4 rounded-2xl backdrop-blur-sm border border-white/20 text-center min-w-[90px]">
+                    <span class="block text-xs text-blue-100">總人數</span>
+                    <span class="text-2xl font-bold" id="totalCount">0</span>
+                </div>
+            </div>
+
+            <!-- Dish Breakdown Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col">
+                <div class="flex items-center justify-between mb-4 border-b pb-3">
+                    <h3 class="font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-chart-pie text-blue-600 mr-2"></i>主餐統計數量
+                    </h3>
+                    <button onclick="openEditMenuModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition font-medium">
+                        <i class="fa-solid fa-gear mr-1"></i> 設定菜單/圖片
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="text-slate-400 text-xs border-b pb-2">
+                                <th class="pb-2 font-medium w-12 text-center">編號</th>
+                                <th class="pb-2 font-medium">主餐</th>
+                                <th class="pb-2 font-medium text-center">單價</th>
+                                <th class="pb-2 font-medium text-center">數量</th>
+                                <th class="pb-2 font-medium text-right">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody id="breakdownTableBody" class="divide-y divide-slate-50">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Tips Box -->
+            <div class="bg-blue-50 border border-blue-200/60 rounded-2xl p-4 text-xs text-blue-800 leading-relaxed">
+                <div class="font-bold flex items-center gap-1.5 mb-1 text-blue-900">
+                    <i class="fa-solid fa-circle-info text-blue-600"></i> 使用說明小貼士
+                </div>
+                <ul class="list-disc pl-4 space-y-1 text-blue-800/90">
+                    <li>點擊「新增訂單」可以填寫名字與選擇主餐。</li>
+                    <li>點擊右側「設定菜單/圖片」可以上傳或輸入便當店菜單圖片網址。</li>
+                    <li>勾選「已付款」可即時標記收錢狀態。</li>
+                </ul>
+            </div>
+
+            <!-- Edit Current Date Button at Bottom Right -->
+            <div class="flex justify-end pt-2">
+                <button onclick="openEditCurrentDateModal()" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-blue-50 cursor-pointer">
+                    <i class="fa-solid fa-pen-to-square"></i> 編輯當日內容
+                </button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Order Modal -->
+    <div id="orderModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-800">新增訂單</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="orderForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editIndex" value="">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">名字</label>
+                    <input type="text" id="inputName" required placeholder="例如：育靜" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">選擇主餐</label>
+                    <select id="inputDish" onchange="updatePriceFromDish()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                        <!-- Options generated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">價格 (NT$)</label>
+                    <input type="number" id="inputPrice" required value="80" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="inputPaid" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                    <label for="inputPaid" class="text-sm font-medium text-slate-700 select-none">已付款</label>
+                </div>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Menu & Menu Image Modal -->
+    <div id="editMenuModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">設定菜單與店家菜單圖片</h3>
+                <button onclick="closeEditMenuModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleEditMenuSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">上傳店家菜單圖片檔案</label>
+                    <input type="file" id="menuImageFile" accept="image/*" onchange="handleMenuImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">或輸入菜單圖片網址 (URL)</label>
+                    <input type="text" id="menuImageUrlInput" placeholder="https://example.com/menu.jpg" class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="previewMenuImageUrl(this.value)">
+                    <input type="hidden" id="menuImageUrl" value="">
+                    <div id="menuImagePreviewContainer" class="mt-2 hidden">
+                        <img id="menuImagePreview" src="" alt="菜單預覽" class="w-32 h-32 object-cover rounded-xl border border-slate-200 shadow-sm cursor-pointer" onclick="openLightbox(this.src)">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單品項與價格設定 (格式: 品項名稱,價格 每行一項)</label>
+                    <textarea id="menuItemsTextarea" rows="5" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" placeholder="招牌便當,80&#10;瘦肉便當,80&#10;香腸便當,80&#10;雞腿便當,80"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeEditMenuModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">儲存菜單設定</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Current Date Modal -->
+    <div id="editCurrentDateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">編輯當日訂餐資訊</h3>
+                <button onclick="closeEditCurrentDateModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleEditCurrentDateSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">日期名稱 (例如: 9/8(二))</label>
+                    <input type="text" id="inputEditDateName" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">餐廳與電話</label>
+                    <input type="text" id="inputEditDateRestaurant" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">收錢人</label>
+                    <input type="text" id="inputEditDateCollector" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">結單時間</label>
+                    <input type="text" id="inputEditDateDeadline" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeEditCurrentDateModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">儲存變更</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div id="lightboxModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" onclick="closeLightbox()">
+        <div class="relative max-w-3xl max-h-[90vh]">
+            <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white hover:text-slate-300 text-2xl font-bold p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="lightboxImage" src="" alt="放大圖片" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain">
+        </div>
+    </div>
+
+    <!-- New Date Modal -->
+    <div id="newDateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">新增訂餐日期</h3>
+                <button onclick="closeNewDateModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleNewDateSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">日期名稱 (例如: 9/9(三))</label>
+                    <input type="text" id="inputNewDateName" required placeholder="9/9(三)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">餐廳與電話</label>
+                    <input type="text" id="inputNewDateRestaurant" placeholder="福隆便當 02-8982-0267" value="福隆便當 02-8982-0267" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">收錢人</label>
+                    <input type="text" id="inputNewDateCollector" placeholder="育靜" value="育靜" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">結單時間 (例如: 9/9(三) 09:40 結單)</label>
+                    <input type="text" id="inputNewDateDeadline" placeholder="9/9(三) 09:40 結單" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeNewDateModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">建立日期</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 text-sm flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-blue-400"></i>
+        <span id="toastMsg">操作成功</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'lunch-order-app-shared-v2';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "demo", projectId: "demo" };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+
+        let db, auth, userId = null;
+
+        let appState = {
+            currentDateId: "2026-09-08",
+            dates: {
+                "2026-09-08": {
+                    name: "9/8(二)",
+                    deadline: "9/8(二) 09:40 結單",
+                    restaurant: "福隆便當 02-8982-0267",
+                    collector: "育靜",
+                    title: "良興電商開飯",
+                    menuImageUrl: "",
+                    menu: [
+                        { name: "招牌便當", price: 80 },
+                        { name: "瘦肉便當", price: 80 },
+                        { name: "香腸便當", price: 80 },
+                        { name: "雞腿便當", price: 80 }
+                    ],
+                    orders: [
+                        { name: "育靜", dish: "雞腿便當", price: 80, paid: true },
+                        { name: "佳動", dish: "雞腿便當", price: 80, paid: true },
+                        { name: "Lulu", dish: "招牌便當", price: 80, paid: true },
+                        { name: "嘉儀", dish: "瘦肉便當", price: 80, paid: true }
+                    ]
+                }
+            }
+        };
+
+        async function initFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) userId = user.uid;
+                });
+
+                // Use a truly shared public document path so all visitors sync the same data
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'sharedLunchStateGlobal');
+                
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data && data.state) {
+                            appState = data.state;
+                            Object.keys(appState.dates || {}).forEach(k => {
+                                if (!appState.dates[k].restaurant) appState.dates[k].restaurant = "福隆便當 02-8982-0267";
+                                if (!appState.dates[k].collector) appState.dates[k].collector = "育靜";
+                                if (appState.dates[k].menuImageUrl === undefined) appState.dates[k].menuImageUrl = "";
+                            });
+                        }
+                    } else {
+                        setDoc(docRef, { state: appState });
+                    }
+                    renderApp();
+                }, (error) => {
+                    console.error("Firestore sync error:", error);
+                    renderApp();
+                });
+
+            } catch (err) {
+                console.warn("Firebase offline mode:", err);
+                renderApp();
+            }
+        }
+
+        async function syncStateToFirestore() {
+            if (!db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'sharedLunchStateGlobal');
+                await setDoc(docRef, { state: appState });
+            } catch (err) {
+                console.error("Failed to sync:", err);
+            }
+        }
+
+        function getActiveDateObj() {
+            if (!appState.dates[appState.currentDateId]) {
+                const firstKey = Object.keys(appState.dates)[0];
+                appState.currentDateId = firstKey;
+            }
+            return appState.dates[appState.currentDateId];
+        }
+
+        window.renderApp = function() {
+            const activeData = getActiveDateObj();
+
+            document.getElementById('headerTitle').innerText = activeData.title || "良興電商開飯";
+            document.getElementById('headerDeadline').innerText = activeData.deadline || "";
+            document.getElementById('headerRestaurant').innerText = activeData.restaurant || "福隆便當 02-8982-0267";
+            document.getElementById('headerCollector').innerText = activeData.collector || "育靜";
+
+            const viewMenuBtn = document.getElementById('viewMenuBtn');
+            if (activeData.menuImageUrl) {
+                viewMenuBtn.classList.remove('hidden');
+            } else {
+                viewMenuBtn.classList.add('hidden');
+            }
+
+            const tabsContainer = document.getElementById('dateTabsContainer');
+            tabsContainer.innerHTML = '';
+            for (const [dateId, dateObj] of Object.entries(appState.dates)) {
+                const isActive = dateId === appState.currentDateId;
+                const btn = document.createElement('div');
+                btn.className = isActive 
+                    ? "px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-semibold text-sm shadow-sm transition flex items-center gap-2 flex-shrink-0"
+                    : "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition flex items-center gap-2 flex-shrink-0 cursor-pointer";
+                
+                btn.innerHTML = `
+                    <span onclick="switchDate('${dateId}')" class="flex items-center gap-1.5">
+                        <i class="fa-regular fa-calendar text-xs ${isActive ? 'text-blue-100' : 'text-slate-400'}"></i>
+                        <span>${escapeHtml(dateObj.name)}</span>
+                    </span>
+                `;
+                tabsContainer.appendChild(btn);
+            }
+
+            const selectEl = document.getElementById('inputDish');
+            selectEl.innerHTML = '';
+            (activeData.menu || []).forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.textContent = `${item.name} ($${item.price})`;
+                selectEl.appendChild(opt);
+            });
+
+            const tbody = document.getElementById('ordersTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            const orders = activeData.orders || [];
+            if (orders.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                orders.forEach((order, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0";
+                    
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 text-center font-medium text-slate-500">${index + 1}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(order.name)}</td>
+                        <td class="py-3 px-4 text-slate-700">${escapeHtml(order.dish)}</td>
+                        <td class="py-3 px-4 text-center text-slate-300 text-xs">-</td>
+                        <td class="py-3 px-4 text-right font-medium text-slate-700">$${order.price}</td>
+                        <td class="py-3 px-4 text-center">
+                            <input type="checkbox" ${order.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="editOrder(${index})" class="p-1.5 text-slate-400 hover:text-blue-600 transition" title="編輯">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button onclick="deleteOrder(${index})" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="刪除">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            renderSummary();
+        };
+
+        window.switchDate = function(dateId) {
+            appState.currentDateId = dateId;
+            renderApp();
+        };
+
+        window.openMenuLightbox = function() {
+            const activeData = getActiveDateObj();
+            if (activeData.menuImageUrl) {
+                openLightbox(activeData.menuImageUrl);
+            }
+        };
+
+        window.openEditCurrentDateModal = function() {
+            const activeData = getActiveDateObj();
+            document.getElementById('inputEditDateName').value = activeData.name || '';
+            document.getElementById('inputEditDateRestaurant').value = activeData.restaurant || '';
+            document.getElementById('inputEditDateCollector').value = activeData.collector || '';
+            document.getElementById('inputEditDateDeadline').value = activeData.deadline || '';
+            document.getElementById('editCurrentDateModal').classList.remove('hidden');
+        };
+
+        window.closeEditCurrentDateModal = function() {
+            document.getElementById('editCurrentDateModal').classList.add('hidden');
+        };
+
+        window.handleEditCurrentDateSubmit = function(event) {
+            event.preventDefault();
+            const activeData = getActiveDateObj();
+            activeData.name = document.getElementById('inputEditDateName').value.trim() || activeData.name;
+            activeData.restaurant = document.getElementById('inputEditDateRestaurant').value.trim() || activeData.restaurant;
+            activeData.collector = document.getElementById('inputEditDateCollector').value.trim() || activeData.collector;
+            activeData.deadline = document.getElementById('inputEditDateDeadline').value.trim() || activeData.deadline;
+
+            closeEditCurrentDateModal();
+            syncStateToFirestore();
+            renderApp();
+            showToast("當日訂餐資訊已更新！");
+        };
+
+        window.openEditMenuModal = function() {
+            const activeData = getActiveDateObj();
+            document.getElementById('menuImageUrl').value = activeData.menuImageUrl || '';
+            document.getElementById('menuImageUrlInput').value = activeData.menuImageUrl || '';
+            if (activeData.menuImageUrl) {
+                document.getElementById('menuImagePreview').src = activeData.menuImageUrl;
+                document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
+            } else {
+                document.getElementById('menuImagePreviewContainer').classList.add('hidden');
+                document.getElementById('menuImageFile').value = '';
+            }
+
+            let menuText = '';
+            (activeData.menu || []).forEach(m => {
+                menuText += `${m.name},${m.price}\n`;
+            });
+            document.getElementById('menuItemsTextarea').value = menuText.trim();
+            document.getElementById('editMenuModal').classList.remove('hidden');
+        };
+
+        window.closeEditMenuModal = function() {
+            document.getElementById('editMenuModal').classList.add('hidden');
+        };
+
+        window.handleMenuImageUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64String = e.target.result;
+                document.getElementById('menuImageUrl').value = base64String;
+                document.getElementById('menuImageUrlInput').value = base64String;
+                document.getElementById('menuImagePreview').src = base64String;
+                document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.previewMenuImageUrl = function(url) {
+            document.getElementById('menuImageUrl').value = url;
+            if (url) {
+                document.getElementById('menuImagePreview').src = url;
+                document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
+            } else {
+                document.getElementById('menuImagePreviewContainer').classList.add('hidden');
+            }
+        };
+
+        window.handleEditMenuSubmit = function(event) {
+            event.preventDefault();
+            const activeData = getActiveDateObj();
+            const menuImageUrl = document.getElementById('menuImageUrl').value;
+            const rawText = document.getElementById('menuItemsTextarea').value;
+
+            const newMenu = [];
+            const lines = rawText.split('\n');
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    const price = Number(parts[1].trim()) || 80;
+                    if (name) {
+                        newMenu.push({ name, price });
+                    }
+                }
+            });
+
+            if (newMenu.length > 0) {
+                activeData.menu = newMenu;
+            }
+            activeData.menuImageUrl = menuImageUrl;
+
+            closeEditMenuModal();
+            syncStateToFirestore();
+            renderApp();
+            showToast("菜單與店家圖片已更新！");
+        };
+
+        window.openNewDateModal = function() {
+            document.getElementById('inputNewDateName').value = '';
+            document.getElementById('inputNewDateRestaurant').value = "福隆便當 02-8982-0267";
+            document.getElementById('inputNewDateCollector').value = "育靜";
+            document.getElementById('inputNewDateDeadline').value = '';
+            document.getElementById('newDateModal').classList.remove('hidden');
+        };
+
+        window.closeNewDateModal = function() {
+            document.getElementById('newDateModal').classList.add('hidden');
+        };
+
+        window.handleNewDateSubmit = function(event) {
+            event.preventDefault();
+            const dateName = document.getElementById('inputNewDateName').value.trim();
+            const restaurant = document.getElementById('inputNewDateRestaurant').value.trim() || "福隆便當 02-8982-0267";
+            const collector = document.getElementById('inputNewDateCollector').value.trim() || "育靜";
+            const deadline = document.getElementById('inputNewDateDeadline').value.trim() || `${dateName} 結單`;
+            if (!dateName) return;
+
+            const dateId = 'date_' + Date.now();
+            const activeData = getActiveDateObj();
+            const inheritedMenu = JSON.parse(JSON.stringify(activeData.menu || []));
+            const inheritedTitle = activeData.title || "良興電商開飯";
+
+            appState.dates[dateId] = {
+                name: dateName,
+                deadline: deadline,
+                restaurant: restaurant,
+                collector: collector,
+                title: inheritedTitle,
+                menuImageUrl: "", // 依需求：新增日期時預設空白
+                menu: inheritedMenu,
+                orders: []
+            };
+
+            appState.currentDateId = dateId;
+            closeNewDateModal();
+            syncStateToFirestore();
+            renderApp();
+            showToast(`已建立新日期頁籤：${dateName}`);
+        };
+
+        window.openAddModal = function() {
+            document.getElementById('modalTitle').innerText = '新增訂單';
+            document.getElementById('editIndex').value = '';
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputPaid').checked = false;
+            updatePriceFromDish();
+            document.getElementById('orderModal').classList.remove('hidden');
+        };
+
+        window.editOrder = function(index) {
+            const activeData = getActiveDateObj();
+            const order = activeData.orders[index];
+            document.getElementById('modalTitle').innerText = '編輯訂單';
+            document.getElementById('editIndex').value = index;
+            document.getElementById('inputName').value = order.name;
+            document.getElementById('inputDish').value = order.dish;
+            document.getElementById('inputPrice').value = order.price;
+            document.getElementById('inputPaid').checked = order.paid;
+
+            document.getElementById('orderModal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('orderModal').classList.add('hidden');
+        };
+
+        window.openLightbox = function(url) {
+            document.getElementById('lightboxImage').src = url;
+            document.getElementById('lightboxModal').classList.remove('hidden');
+        };
+
+        window.closeLightbox = function() {
+            document.getElementById('lightboxModal').classList.add('hidden');
+        };
+
+        window.updatePriceFromDish = function() {
+            const activeData = getActiveDateObj();
+            const dishName = document.getElementById('inputDish').value;
+            const found = (activeData.menu || []).find(m => m.name === dishName);
+            if (found) {
+                document.getElementById('inputPrice').value = found.price;
+            }
+        };
+
+        window.handleFormSubmit = function(event) {
+            event.preventDefault();
+            const activeData = getActiveDateObj();
+            const editIndex = document.getElementById('editIndex').value;
+            const name = document.getElementById('inputName').value.trim();
+            const dish = document.getElementById('inputDish').value;
+            const price = Number(document.getElementById('inputPrice').value) || 0;
+            const paid = document.getElementById('inputPaid').checked;
+
+            if (!name) return;
+
+            const newOrder = { name, dish, price, paid };
+
+            if (!activeData.orders) activeData.orders = [];
+
+            if (editIndex === "") {
+                activeData.orders.push(newOrder);
+                showToast("成功新增訂單！");
+            } else {
+                activeData.orders[editIndex] = newOrder;
+                showToast("訂單已更新！");
+            }
+
+            closeModal();
+            syncStateToFirestore();
+            renderApp();
+        };
+
+        window.deleteOrder = function(index) {
+            const activeData = getActiveDateObj();
+            activeData.orders.splice(index, 1);
+            syncStateToFirestore();
+            renderApp();
+            showToast("已刪除該筆訂單");
+        };
+
+        window.togglePaid = function(index) {
+            const activeData = getActiveDateObj();
+            activeData.orders[index].paid = !activeData.orders[index].paid;
+            syncStateToFirestore();
+            renderSummary();
+        };
+
+        function renderSummary() {
+            const activeData = getActiveDateObj();
+            const orders = activeData.orders || [];
+            
+            let grandTotal = 0;
+            orders.forEach(o => {
+                grandTotal += Number(o.price) || 0;
+            });
+
+            document.getElementById('grandTotalAmt').innerText = `$${grandTotal}`;
+            document.getElementById('totalCount').innerText = orders.length;
+
+            const counts = {};
+            const prices = {};
+            (activeData.menu || []).forEach(m => {
+                counts[m.name] = 0;
+                prices[m.name] = m.price;
+            });
+
+            orders.forEach(o => {
+                if (counts[o.dish] !== undefined) {
+                    counts[o.dish]++;
+                } else {
+                    counts[o.dish] = (counts[o.dish] || 0) + 1;
+                    if (prices[o.dish] === undefined) {
+                        prices[o.dish] = o.price || 0;
+                    }
+                }
+            });
+
+            const breakdownBody = document.getElementById('breakdownTableBody');
+            breakdownBody.innerHTML = '';
+
+            let index = 1;
+            const allDishNames = [...new Set([...(activeData.menu || []).map(m => m.name), ...orders.map(o => o.dish)])];
+            
+            allDishNames.forEach(dishName => {
+                const qty = counts[dishName] || 0;
+                const price = prices[dishName] || 80;
+                const totalAmt = qty * price;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="py-2.5 text-center text-slate-500 font-medium">${index++}</td>
+                    <td class="py-2.5 text-slate-800">${escapeHtml(dishName)}</td>
+                    <td class="py-2.5 text-center text-slate-600">$${price}</td>
+                    <td class="py-2.5 text-center font-bold text-blue-600">${qty}</td>
+                    <td class="py-2.5 text-right font-semibold text-slate-700">$${totalAmt}</td>
+                `;
+                breakdownBody.appendChild(tr);
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.onload = function() {
+            initFirebase();
+        };
+    </script>
+</body>
+</html>
