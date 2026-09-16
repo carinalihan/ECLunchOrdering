@@ -319,6 +319,13 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">結單時間 (例如: 9/9(三) 09:40 結單)</label>
                     <input type="text" id="inputNewDateDeadline" placeholder="9/9(三) 09:40 結單" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單來源</label>
+                    <select id="menuTemplateSelect" onchange="applyMenuTemplate(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                    </select>
+                    <p class="text-xs text-slate-400 mt-1">可直接帶入之前建立過的菜單；只帶入菜單，不會帶入之前的訂單。</p>
+                </div>
+                <div id="menuTemplatePreview" class="hidden rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600"></div>
                 <div class="flex justify-end gap-3 pt-3">
                     <button type="button" onclick="closeNewDateModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
                     <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">建立日期</button>
@@ -347,6 +354,7 @@
         // 保留原本的初始資料，Google Sheet 讀取成功後會自動覆蓋。
         let appState = {
             currentDateId: "2026-09-08",
+            menuHistory: [],
             dates: {
                 "2026-09-08": {
                     name: "9/8(二)",
@@ -376,6 +384,7 @@
         let isSaving = false;
         let syncFrame = null;
         const LOCAL_STATE_KEY = "eclunchordering_state_v3";
+        const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
 
         function saveLocalState() {
             try {
@@ -392,6 +401,10 @@
                 const saved = JSON.parse(raw);
                 if (saved && saved.dates && typeof saved.dates === "object") {
                     appState = normalizeState(saved);
+                    try {
+                        const selected = localStorage.getItem(LOCAL_SELECTED_DATE_KEY);
+                        if (selected && appState.dates[selected]) appState.currentDateId = selected;
+                    } catch (e) {}
                     return true;
                 }
             } catch (err) {
@@ -403,13 +416,34 @@
         function normalizeState(state) {
             if (!state || typeof state !== "object") return state;
 
+            if (!Array.isArray(state.menuHistory)) state.menuHistory = [];
             Object.keys(state.dates || {}).forEach(k => {
                 if (!state.dates[k].restaurant) state.dates[k].restaurant = "福隆便當 02-8982-0267";
                 if (!state.dates[k].collector) state.dates[k].collector = "育靜";
                 if (state.dates[k].menuUrl === undefined) state.dates[k].menuUrl = "";
                 if (state.dates[k].menuImageUrl === undefined) state.dates[k].menuImageUrl = "";
+                if (!Array.isArray(state.dates[k].menu)) state.dates[k].menu = [];
             });
 
+            // 舊資料升級：把既有日期曾使用過的菜單自動建立成歷史菜單。
+            const addHistory = (dateObj) => {
+                const menu = Array.isArray(dateObj.menu) ? dateObj.menu : [];
+                if (!menu.length) return;
+                const key = JSON.stringify(menu);
+                const exists = state.menuHistory.some(h => JSON.stringify(h.menu || []) === key && (h.restaurant || '') === (dateObj.restaurant || ''));
+                if (!exists) {
+                    state.menuHistory.push({
+                        id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                        name: dateObj.restaurant || '歷史菜單',
+                        restaurant: dateObj.restaurant || '',
+                        menuUrl: dateObj.menuUrl || '',
+                        menuImageUrl: dateObj.menuImageUrl || '',
+                        menu: JSON.parse(JSON.stringify(menu)),
+                        lastUsed: dateObj.name || ''
+                    });
+                }
+            };
+            Object.values(state.dates || {}).forEach(addHistory);
             return state;
         }
 
@@ -462,7 +496,13 @@
 
                 window[callbackName] = function(data) {
                     if (data && data.ok && data.state) {
-                        appState = normalizeState(data.state);
+                        let selectedDateId = null;
+                        try { selectedDateId = localStorage.getItem(LOCAL_SELECTED_DATE_KEY); } catch (e) {}
+                        const incoming = normalizeState(data.state);
+                        appState = incoming;
+                        if (selectedDateId && appState.dates && appState.dates[selectedDateId]) {
+                            appState.currentDateId = selectedDateId;
+                        }
                         saveLocalState();
                     }
 
@@ -564,17 +604,16 @@
             tabsContainer.innerHTML = '';
             for (const [dateId, dateObj] of Object.entries(appState.dates)) {
                 const isActive = dateId === appState.currentDateId;
-                const btn = document.createElement('div');
+                const btn = document.createElement('button');
+                btn.type = 'button';
                 btn.className = isActive 
-                    ? "px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-semibold text-sm shadow-sm transition flex items-center gap-2 flex-shrink-0"
-                    : "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition flex items-center gap-2 flex-shrink-0 cursor-pointer";
-                
+                    ? "px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-semibold text-sm shadow-sm transition flex items-center gap-1.5 flex-shrink-0"
+                    : "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition flex items-center gap-1.5 flex-shrink-0 cursor-pointer";
                 btn.innerHTML = `
-                    <span onclick="switchDate('${dateId}')" class="flex items-center gap-1.5">
-                        <i class="fa-regular fa-calendar text-xs ${isActive ? 'text-blue-100' : 'text-slate-400'}"></i>
-                        <span>${escapeHtml(dateObj.name)}</span>
-                    </span>
+                    <i class="fa-regular fa-calendar text-xs ${isActive ? 'text-blue-100' : 'text-slate-400'}"></i>
+                    <span>${escapeHtml(dateObj.name)}</span>
                 `;
+                btn.addEventListener('click', () => switchDate(dateId));
                 tabsContainer.appendChild(btn);
             }
 
@@ -627,7 +666,10 @@
         };
 
         window.switchDate = function(dateId) {
+            if (!appState.dates || !appState.dates[dateId]) return;
             appState.currentDateId = dateId;
+            try { localStorage.setItem(LOCAL_SELECTED_DATE_KEY, dateId); } catch (e) {}
+            // 日期頁籤是每台裝置自己的瀏覽位置，不同步到 Google Sheet，避免 5 秒輪詢把畫面跳回最新日期。
             renderApp();
         };
 
@@ -730,6 +772,7 @@
             }
             activeData.menuUrl = menuUrl;
             activeData.menuImageUrl = menuImageUrl;
+            rememberMenuHistory(activeData);
 
             closeEditMenuModal();
             saveLocalState();
@@ -743,12 +786,80 @@
             document.getElementById('inputNewDateRestaurant').value = "福隆便當 02-8982-0267";
             document.getElementById('inputNewDateCollector').value = "育靜";
             document.getElementById('inputNewDateDeadline').value = '';
+            populateMenuTemplates();
             document.getElementById('newDateModal').classList.remove('hidden');
         };
 
         window.closeNewDateModal = function() {
             document.getElementById('newDateModal').classList.add('hidden');
         };
+
+        function getMenuHistory() {
+            if (!Array.isArray(appState.menuHistory)) appState.menuHistory = [];
+            return appState.menuHistory;
+        }
+
+        window.populateMenuTemplates = function() {
+            const select = document.getElementById('menuTemplateSelect');
+            const preview = document.getElementById('menuTemplatePreview');
+            if (!select) return;
+            const history = getMenuHistory();
+            select.innerHTML = '<option value="">＋ 建立新菜單</option>';
+            history.slice().reverse().forEach(h => {
+                const option = document.createElement('option');
+                option.value = h.id;
+                option.textContent = `${h.name || h.restaurant || '歷史菜單'}${h.menu && h.menu.length ? `（${h.menu.length} 項）` : ''}`;
+                select.appendChild(option);
+            });
+            const activeData = getActiveDateObj();
+            const latestId = history.length ? history[history.length - 1].id : '';
+            if (latestId) {
+                select.value = latestId;
+                applyMenuTemplate(latestId);
+            } else if (activeData.menu && activeData.menu.length) {
+                preview.classList.remove('hidden');
+                preview.innerHTML = '<strong>目前菜單</strong><br>' + activeData.menu.map(m => `${escapeHtml(m.name)} $${m.price}`).join('　');
+            } else {
+                preview.classList.add('hidden');
+            }
+        };
+
+        window.applyMenuTemplate = function(historyId) {
+            const preview = document.getElementById('menuTemplatePreview');
+            if (!historyId) {
+                preview.classList.add('hidden');
+                return;
+            }
+            const template = getMenuHistory().find(h => h.id === historyId);
+            if (!template) return;
+            if (template.restaurant) document.getElementById('inputNewDateRestaurant').value = template.restaurant;
+            preview.classList.remove('hidden');
+            preview.innerHTML = `<strong>${escapeHtml(template.name || template.restaurant || '歷史菜單')}</strong><br>${(template.menu || []).map(m => `${escapeHtml(m.name)} $${m.price}`).join('　')}`;
+        };
+
+        function rememberMenuHistory(dateObj) {
+            const menu = Array.isArray(dateObj.menu) ? dateObj.menu : [];
+            if (!menu.length) return;
+            const history = getMenuHistory();
+            const key = JSON.stringify(menu);
+            const existing = history.find(h => JSON.stringify(h.menu || []) === key && (h.restaurant || '') === (dateObj.restaurant || ''));
+            if (existing) {
+                existing.lastUsed = dateObj.name || '';
+                existing.menuUrl = dateObj.menuUrl || existing.menuUrl || '';
+                existing.menuImageUrl = dateObj.menuImageUrl || existing.menuImageUrl || '';
+                return;
+            }
+            history.push({
+                id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                name: dateObj.restaurant || '歷史菜單',
+                restaurant: dateObj.restaurant || '',
+                menuUrl: dateObj.menuUrl || '',
+                menuImageUrl: dateObj.menuImageUrl || '',
+                menu: JSON.parse(JSON.stringify(menu)),
+                lastUsed: dateObj.name || ''
+            });
+            if (history.length > 30) history.splice(0, history.length - 30);
+        }
 
         window.handleNewDateSubmit = function(event) {
             event.preventDefault();
@@ -760,22 +871,28 @@
 
             const dateId = 'date_' + Date.now();
             const activeData = getActiveDateObj();
-            const inheritedMenu = JSON.parse(JSON.stringify(activeData.menu || []));
+            const templateId = document.getElementById('menuTemplateSelect').value;
+            const template = getMenuHistory().find(h => h.id === templateId);
+            const inheritedMenu = template
+                ? JSON.parse(JSON.stringify(template.menu || []))
+                : JSON.parse(JSON.stringify(activeData.menu || []));
             const inheritedTitle = activeData.title || "良興電商開飯";
 
             appState.dates[dateId] = {
                 name: dateName,
                 deadline: deadline,
-                restaurant: restaurant,
+                restaurant: template && template.restaurant ? template.restaurant : restaurant,
                 collector: collector,
                 title: inheritedTitle,
-                menuUrl: activeData.menuUrl || "",
-                menuImageUrl: "", // 新增日期時圖片預設空白
+                menuUrl: template ? (template.menuUrl || "") : "",
+                menuImageUrl: "",
                 menu: inheritedMenu,
                 orders: []
             };
+            rememberMenuHistory(appState.dates[dateId]);
 
             appState.currentDateId = dateId;
+            try { localStorage.setItem(LOCAL_SELECTED_DATE_KEY, dateId); } catch (e) {}
             closeNewDateModal();
             saveLocalState();
             syncStateToFirestore();
@@ -972,6 +1089,11 @@
         window.onload = function() {
             try {
                 loadLocalState();
+                try {
+                    if (!localStorage.getItem(LOCAL_SELECTED_DATE_KEY) && appState.currentDateId) {
+                        localStorage.setItem(LOCAL_SELECTED_DATE_KEY, appState.currentDateId);
+                    }
+                } catch (e) {}
                 renderApp();
                 initFirebase();
             } catch (err) {
