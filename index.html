@@ -806,7 +806,50 @@
             document.getElementById('editMenuModal').classList.add('hidden');
         };
 
-        window.handleMenuImageUpload = function(event) {
+        // 將圖片壓縮到 Google Sheet 單一儲存格可安全承載的大小。
+        // Google Sheets 單一儲存格約 50,000 字元，因此不能直接存手機原圖。
+        async function compressImageForStorage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error("圖片讀取失敗"));
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error("圖片解析失敗"));
+                    img.onload = () => {
+                        let maxSide = 900;
+                        let quality = 0.62;
+                        let compressed = '';
+
+                        for (let i = 0; i < 7; i++) {
+                            const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+                            const canvas = document.createElement('canvas');
+                            canvas.width = Math.max(1, Math.round(img.width * scale));
+                            canvas.height = Math.max(1, Math.round(img.height * scale));
+                            const ctx = canvas.getContext('2d', { alpha: false });
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            compressed = canvas.toDataURL('image/jpeg', quality);
+
+                            // 留安全空間，避免接近 Google Sheet 儲存格上限。
+                            if (compressed.length <= 44000) break;
+                            if (quality > 0.40) quality -= 0.06;
+                            else maxSide -= 100;
+                        }
+
+                        if (!compressed || compressed.length > 48000) {
+                            reject(new Error('圖片仍然太大'));
+                            return;
+                        }
+                        resolve(compressed);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.handleMenuImageUpload = async function(event) {
             const file = event.target.files[0];
             if (!file) return;
             if (!file.type.startsWith('image/')) {
@@ -814,34 +857,17 @@
                 event.target.value = '';
                 return;
             }
-
-            // 圖片先在瀏覽器縮小與壓縮，避免原始照片太大造成 Google Sheet 同步失敗。
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const maxSide = 1200;
-                    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-                    const canvas = document.createElement('canvas');
-                    canvas.width = Math.max(1, Math.round(img.width * scale));
-                    canvas.height = Math.max(1, Math.round(img.height * scale));
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const compressed = canvas.toDataURL('image/jpeg', 0.72);
-                    document.getElementById('menuImageUrl').value = compressed;
-                    document.getElementById('menuImagePreview').src = compressed;
-                    document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
-                    showToast('菜單圖片已上傳');
-                };
-                img.onerror = function() {
-                    showToast('圖片讀取失敗，請重新選擇');
-                };
-                img.src = e.target.result;
-            };
-            reader.onerror = function() {
-                showToast('圖片讀取失敗，請重新選擇');
-            };
-            reader.readAsDataURL(file);
+            try {
+                const compressed = await compressImageForStorage(file);
+                document.getElementById('menuImageUrl').value = compressed;
+                document.getElementById('menuImagePreview').src = compressed;
+                document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
+                showToast('菜單圖片已上傳');
+            } catch (err) {
+                console.error(err);
+                event.target.value = '';
+                showToast('圖片太大或格式無法處理，請換一張圖片');
+            }
         };
 
         window.handleEditMenuSubmit = function(event) {
@@ -1125,7 +1151,7 @@
             document.getElementById('menuMasterEditModal').classList.add('hidden');
         };
 
-        window.handleMenuMasterImageUpload = function(event) {
+        window.handleMenuMasterImageUpload = async function(event) {
             const file = event.target.files[0];
             if (!file) return;
             if (!file.type.startsWith('image/')) {
@@ -1133,33 +1159,17 @@
                 event.target.value = '';
                 return;
             }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const maxSide = 1200;
-                    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-                    const canvas = document.createElement('canvas');
-                    canvas.width = Math.max(1, Math.round(img.width * scale));
-                    canvas.height = Math.max(1, Math.round(img.height * scale));
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const compressed = canvas.toDataURL('image/jpeg', 0.72);
-                    document.getElementById('menuMasterImageUrl').value = compressed;
-                    document.getElementById('menuMasterImagePreview').src = compressed;
-                    document.getElementById('menuMasterImagePreviewContainer').classList.remove('hidden');
-                    showToast('菜單圖片已上傳');
-                };
-                img.onerror = function() {
-                    showToast('圖片讀取失敗，請重新選擇');
-                };
-                img.src = e.target.result;
-            };
-            reader.onerror = function() {
-                showToast('圖片讀取失敗，請重新選擇');
-            };
-            reader.readAsDataURL(file);
+            try {
+                const compressed = await compressImageForStorage(file);
+                document.getElementById('menuMasterImageUrl').value = compressed;
+                document.getElementById('menuMasterImagePreview').src = compressed;
+                document.getElementById('menuMasterImagePreviewContainer').classList.remove('hidden');
+                showToast('菜單圖片已上傳');
+            } catch (err) {
+                console.error(err);
+                event.target.value = '';
+                showToast('圖片太大或格式無法處理，請換一張圖片');
+            }
         };
 
         window.handleMenuMasterSubmit = function(event) {
