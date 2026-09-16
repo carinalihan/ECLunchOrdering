@@ -171,6 +171,9 @@
                 <button onclick="deleteCurrentDate()" class="text-rose-600 hover:text-rose-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-rose-50 cursor-pointer">
                     <i class="fa-solid fa-trash"></i> 刪除日期
                 </button>
+                <button onclick="openMenuLibraryModal()" class="text-emerald-600 hover:text-emerald-800 text-xs font-semibold transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-emerald-50 cursor-pointer">
+                    <i class="fa-solid fa-book-open"></i> 全部菜單
+                </button>
             </div>
 
         </div>
@@ -334,6 +337,60 @@
         </div>
     </div>
 
+    <!-- Menu Library Modal -->
+    <div id="menuLibraryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">📋 全部菜單</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">修改菜單主檔後，可同步到使用這份菜單的日期</p>
+                </div>
+                <button onclick="closeMenuLibraryModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="menuLibraryList" class="p-5 overflow-y-auto space-y-3"></div>
+            <div class="px-6 py-4 border-t border-slate-200 flex justify-between items-center">
+                <button onclick="openNewMenuMasterModal()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"><i class="fa-solid fa-plus mr-1"></i>建立新菜單</button>
+                <button onclick="closeMenuLibraryModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Menu Master Modal -->
+    <div id="menuMasterEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 id="menuMasterModalTitle" class="text-lg font-bold text-slate-800">編輯菜單</h3>
+                    <p class="text-xs text-slate-400 mt-1">這裡是菜單主檔，之後新增日期可以直接套用</p>
+                </div>
+                <button onclick="closeMenuMasterModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleMenuMasterSubmit(event)" class="space-y-4">
+                <input type="hidden" id="menuMasterId" value="">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">餐廳與電話</label>
+                    <input type="text" id="menuMasterRestaurant" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單網址（選填）</label>
+                    <input type="url" id="menuMasterUrl" placeholder="https://..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">品項與價格（每行：品項,價格）</label>
+                    <textarea id="menuMasterItems" rows="7" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"></textarea>
+                </div>
+                <label class="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-100 p-3 cursor-pointer">
+                    <input type="checkbox" id="menuMasterSyncDates" checked class="mt-1 w-4 h-4 text-emerald-600 rounded">
+                    <span class="text-xs text-emerald-800"><strong>同步到已使用這份菜單的日期</strong><br>會更新餐廳與菜單，但<strong>不會改掉已存在訂單的實際付款金額</strong>。</span>
+                </label>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeMenuMasterModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">儲存並更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 text-sm flex items-center gap-2">
         <i class="fa-solid fa-circle-check text-blue-400"></i>
@@ -422,6 +479,7 @@
                 if (!state.dates[k].collector) state.dates[k].collector = "育靜";
                 if (state.dates[k].menuUrl === undefined) state.dates[k].menuUrl = "";
                 if (state.dates[k].menuImageUrl === undefined) state.dates[k].menuImageUrl = "";
+                if (state.dates[k].menuSourceId === undefined) state.dates[k].menuSourceId = "";
                 if (!Array.isArray(state.dates[k].menu)) state.dates[k].menu = [];
             });
 
@@ -772,7 +830,14 @@
             }
             activeData.menuUrl = menuUrl;
             activeData.menuImageUrl = menuImageUrl;
-            rememberMenuHistory(activeData);
+            const master = findOrCreateMenuMaster(activeData);
+            if (master) {
+                master.restaurant = activeData.restaurant || master.restaurant;
+                master.name = master.restaurant;
+                master.menuUrl = activeData.menuUrl || master.menuUrl || '';
+                master.menu = JSON.parse(JSON.stringify(activeData.menu || []));
+                activeData.menuSourceId = master.id;
+            }
 
             closeEditMenuModal();
             saveLocalState();
@@ -799,7 +864,42 @@
             return appState.menuHistory;
         }
 
+        function menuToText(menu) {
+            return (menu || []).map(m => `${m.name},${m.price}`).join('\n');
+        }
+
+        function findOrCreateMenuMaster(dateObj) {
+            const history = getMenuHistory();
+            const menu = Array.isArray(dateObj.menu) ? dateObj.menu : [];
+            if (!menu.length) return null;
+            if (dateObj.menuSourceId) {
+                const linked = history.find(h => h.id === dateObj.menuSourceId);
+                if (linked) return linked;
+            }
+            const restaurant = dateObj.restaurant || '';
+            let existing = history.find(h => (h.restaurant || '') === restaurant && JSON.stringify(h.menu || []) === JSON.stringify(menu));
+            if (!existing) {
+                existing = {
+                    id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    name: restaurant || '歷史菜單',
+                    restaurant,
+                    menuUrl: dateObj.menuUrl || '',
+                    menuImageUrl: dateObj.menuImageUrl || '',
+                    menu: JSON.parse(JSON.stringify(menu)),
+                    lastUsed: dateObj.name || ''
+                };
+                history.push(existing);
+            }
+            dateObj.menuSourceId = existing.id;
+            return existing;
+        }
+
+        function migrateMenuMasters() {
+            Object.values(appState.dates || {}).forEach(d => findOrCreateMenuMaster(d));
+        }
+
         window.populateMenuTemplates = function() {
+            migrateMenuMasters();
             const select = document.getElementById('menuTemplateSelect');
             const preview = document.getElementById('menuTemplatePreview');
             if (!select) return;
@@ -808,17 +908,12 @@
             history.slice().reverse().forEach(h => {
                 const option = document.createElement('option');
                 option.value = h.id;
-                option.textContent = `${h.name || h.restaurant || '歷史菜單'}${h.menu && h.menu.length ? `（${h.menu.length} 項）` : ''}`;
+                option.textContent = `${h.restaurant || h.name || '歷史菜單'}${h.menu && h.menu.length ? `（${h.menu.length} 項）` : ''}`;
                 select.appendChild(option);
             });
-            const activeData = getActiveDateObj();
-            const latestId = history.length ? history[history.length - 1].id : '';
-            if (latestId) {
-                select.value = latestId;
-                applyMenuTemplate(latestId);
-            } else if (activeData.menu && activeData.menu.length) {
-                preview.classList.remove('hidden');
-                preview.innerHTML = '<strong>目前菜單</strong><br>' + activeData.menu.map(m => `${escapeHtml(m.name)} $${m.price}`).join('　');
+            if (history.length) {
+                select.value = history[history.length - 1].id;
+                applyMenuTemplate(select.value);
             } else {
                 preview.classList.add('hidden');
             }
@@ -826,40 +921,119 @@
 
         window.applyMenuTemplate = function(historyId) {
             const preview = document.getElementById('menuTemplatePreview');
-            if (!historyId) {
-                preview.classList.add('hidden');
-                return;
-            }
+            if (!historyId) { preview.classList.add('hidden'); return; }
             const template = getMenuHistory().find(h => h.id === historyId);
             if (!template) return;
-            if (template.restaurant) document.getElementById('inputNewDateRestaurant').value = template.restaurant;
+            document.getElementById('inputNewDateRestaurant').value = template.restaurant || '';
             preview.classList.remove('hidden');
-            preview.innerHTML = `<strong>${escapeHtml(template.name || template.restaurant || '歷史菜單')}</strong><br>${(template.menu || []).map(m => `${escapeHtml(m.name)} $${m.price}`).join('　')}`;
+            preview.innerHTML = `<strong>${escapeHtml(template.restaurant || template.name || '歷史菜單')}</strong><br>${(template.menu || []).map(m => `${escapeHtml(m.name)} $${m.price}`).join('　')}`;
         };
 
-        function rememberMenuHistory(dateObj) {
-            const menu = Array.isArray(dateObj.menu) ? dateObj.menu : [];
-            if (!menu.length) return;
+        window.openMenuLibraryModal = function() {
+            migrateMenuMasters();
+            renderMenuLibrary();
+            document.getElementById('menuLibraryModal').classList.remove('hidden');
+            saveLocalState();
+        };
+
+        window.closeMenuLibraryModal = function() {
+            document.getElementById('menuLibraryModal').classList.add('hidden');
+        };
+
+        function renderMenuLibrary() {
+            const list = document.getElementById('menuLibraryList');
             const history = getMenuHistory();
-            const key = JSON.stringify(menu);
-            const existing = history.find(h => JSON.stringify(h.menu || []) === key && (h.restaurant || '') === (dateObj.restaurant || ''));
-            if (existing) {
-                existing.lastUsed = dateObj.name || '';
-                existing.menuUrl = dateObj.menuUrl || existing.menuUrl || '';
-                existing.menuImageUrl = dateObj.menuImageUrl || existing.menuImageUrl || '';
+            if (!history.length) {
+                list.innerHTML = '<div class="py-10 text-center text-slate-400 text-sm">目前還沒有菜單主檔。你可以從目前日期的菜單建立第一份。</div>';
                 return;
             }
-            history.push({
-                id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                name: dateObj.restaurant || '歷史菜單',
-                restaurant: dateObj.restaurant || '',
-                menuUrl: dateObj.menuUrl || '',
-                menuImageUrl: dateObj.menuImageUrl || '',
-                menu: JSON.parse(JSON.stringify(menu)),
-                lastUsed: dateObj.name || ''
-            });
-            if (history.length > 30) history.splice(0, history.length - 30);
+            list.innerHTML = history.slice().reverse().map(h => {
+                const usedCount = Object.values(appState.dates || {}).filter(d => d.menuSourceId === h.id).length;
+                return `<div class="border border-slate-200 rounded-2xl p-4 hover:border-blue-200 transition">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="font-bold text-slate-800">${escapeHtml(h.restaurant || h.name || '未命名菜單')}</div>
+                            <div class="text-xs text-slate-400 mt-1">${h.menu.length} 個品項 · ${usedCount} 個日期使用中</div>
+                        </div>
+                        <button onclick="editMenuMaster('${h.id}')" class="shrink-0 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold"><i class="fa-solid fa-pen mr-1"></i>編輯菜單</button>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">${(h.menu || []).map(m => `<span class="px-2.5 py-1 rounded-lg bg-slate-50 text-xs text-slate-600">${escapeHtml(m.name)} <strong>$${m.price}</strong></span>`).join('')}</div>
+                </div>`;
+            }).join('');
         }
+
+        window.openNewMenuMasterModal = function() {
+            document.getElementById('menuMasterModalTitle').innerText = '建立新菜單';
+            document.getElementById('menuMasterId').value = '';
+            document.getElementById('menuMasterRestaurant').value = '';
+            document.getElementById('menuMasterUrl').value = '';
+            document.getElementById('menuMasterItems').value = '';
+            document.getElementById('menuMasterSyncDates').checked = false;
+            document.getElementById('menuMasterEditModal').classList.remove('hidden');
+        };
+
+        window.editMenuMaster = function(id) {
+            const h = getMenuHistory().find(x => x.id === id);
+            if (!h) return;
+            document.getElementById('menuMasterModalTitle').innerText = '編輯菜單主檔';
+            document.getElementById('menuMasterId').value = h.id;
+            document.getElementById('menuMasterRestaurant').value = h.restaurant || h.name || '';
+            document.getElementById('menuMasterUrl').value = h.menuUrl || '';
+            document.getElementById('menuMasterItems').value = menuToText(h.menu);
+            document.getElementById('menuMasterSyncDates').checked = true;
+            document.getElementById('menuMasterEditModal').classList.remove('hidden');
+        };
+
+        window.closeMenuMasterModal = function() {
+            document.getElementById('menuMasterEditModal').classList.add('hidden');
+        };
+
+        window.handleMenuMasterSubmit = function(event) {
+            event.preventDefault();
+            const history = getMenuHistory();
+            const id = document.getElementById('menuMasterId').value;
+            const restaurant = document.getElementById('menuMasterRestaurant').value.trim();
+            const menuUrl = document.getElementById('menuMasterUrl').value.trim();
+            const syncDates = document.getElementById('menuMasterSyncDates').checked;
+            const newMenu = [];
+            document.getElementById('menuMasterItems').value.split('\n').forEach(line => {
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    const price = Number(parts[1].trim());
+                    if (name && Number.isFinite(price)) newMenu.push({name, price});
+                }
+            });
+            if (!restaurant || !newMenu.length) { showToast('請填寫餐廳與至少一個菜單品項'); return; }
+
+            let master = id ? history.find(h => h.id === id) : null;
+            if (!master) {
+                master = { id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name: restaurant, restaurant: '', menu: [] };
+                history.push(master);
+            }
+            master.name = restaurant;
+            master.restaurant = restaurant;
+            master.menuUrl = menuUrl;
+            master.menu = JSON.parse(JSON.stringify(newMenu));
+            master.lastUsed = new Date().toLocaleDateString('zh-TW');
+
+            if (syncDates) {
+                Object.values(appState.dates || {}).forEach(d => {
+                    if (d.menuSourceId === master.id) {
+                        d.restaurant = restaurant;
+                        d.menuUrl = menuUrl;
+                        d.menu = JSON.parse(JSON.stringify(newMenu));
+                    }
+                });
+            }
+
+            closeMenuMasterModal();
+            saveLocalState();
+            syncStateToFirestore();
+            renderMenuLibrary();
+            renderApp();
+            showToast(syncDates ? '菜單已更新，相關日期已同步！' : '菜單主檔已更新！');
+        };
 
         window.handleNewDateSubmit = function(event) {
             event.preventDefault();
@@ -886,6 +1060,7 @@
                 title: inheritedTitle,
                 menuUrl: template ? (template.menuUrl || "") : "",
                 menuImageUrl: "",
+                menuSourceId: template ? template.id : "",
                 menu: inheritedMenu,
                 orders: []
             };
