@@ -616,14 +616,16 @@
                 form.appendChild(input);
                 document.body.appendChild(form);
 
-                // 先提交完整狀態，再等待 Apps Script 寫入。
+                // 背景送出：畫面不等待 Google Sheet 回傳，讓新增/編輯立即完成。
                 form.submit();
                 form.remove();
 
+                // 不再每次寫入後重新抓整份資料。
+                // 其他裝置仍會透過既有的 5 秒輪詢取得最新資料。
+                // 這樣可避免自己剛新增的資料被遠端回讀造成延遲或畫面跳動。
                 setTimeout(() => {
                     isSaving = false;
-                    loadStateFromSheet();
-                }, 2500);
+                }, 1200);
 
             } catch (err) {
                 console.error("Google Sheet 同步寫入失敗:", err);
