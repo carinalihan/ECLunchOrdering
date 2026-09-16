@@ -453,6 +453,8 @@
         let syncTimer = null;
         let isSaving = false;
         let syncFrame = null;
+        // 防止圖片上傳後，舊的 Google Sheet 資料回讀把剛上傳的圖片蓋掉。
+        let pendingSyncVersion = 0;
         const LOCAL_STATE_KEY = "eclunchordering_state_v3";
         const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
 
@@ -471,6 +473,9 @@
                 const saved = JSON.parse(raw);
                 if (saved && saved.dates && typeof saved.dates === "object") {
                     appState = normalizeState(saved);
+                    // 若上一次儲存尚未被遠端確認，先保護本機版本，避免重新整理時被舊資料蓋掉。
+                    pendingSyncVersion = Number(appState._syncVersion || 0);
+                    isSaving = pendingSyncVersion > 0;
                     try {
                         const selected = localStorage.getItem(LOCAL_SELECTED_DATE_KEY);
                         if (selected && appState.dates[selected]) appState.currentDateId = selected;
@@ -529,11 +534,12 @@
 
             await loadStateFromSheet();
 
-            // 只在成功建立同步後輪詢；輪詢期間不會覆蓋正在儲存的本機資料。
+            // 只在成功建立同步後輪詢。
+            // 若本機還有尚未被 Google Sheet 確認的版本，絕對不能用舊資料覆蓋本機。
             if (syncTimer) clearInterval(syncTimer);
             syncTimer = setInterval(() => {
-                if (!isSaving) loadStateFromSheet();
-            }, 5000);
+                if (!isSaving || pendingSyncVersion > 0) loadStateFromSheet();
+            }, 3000);
         }
 
         function loadStateFromSheet() {
@@ -567,6 +573,16 @@
 
                 window[callbackName] = function(data) {
                     if (data && data.ok && data.state) {
+                        const incomingVersion = Number(data.state._syncVersion || 0);
+                        // 只要遠端版本比本機正在等待確認的版本舊，就完全不採用。
+                        // 這就是修正「圖片出現一下又消失」的關鍵。
+                        if (pendingSyncVersion > 0 && incomingVersion < pendingSyncVersion) {
+                            console.warn("忽略舊的 Google Sheet 資料", incomingVersion, pendingSyncVersion);
+                            renderApp();
+                            finish();
+                            return;
+                        }
+
                         let selectedDateId = null;
                         try { selectedDateId = localStorage.getItem(LOCAL_SELECTED_DATE_KEY); } catch (e) {}
                         const incoming = normalizeState(data.state);
@@ -575,6 +591,11 @@
                             appState.currentDateId = selectedDateId;
                         }
                         saveLocalState();
+
+                        if (pendingSyncVersion > 0 && incomingVersion >= pendingSyncVersion) {
+                            pendingSyncVersion = 0;
+                            isSaving = false;
+                        }
                     }
 
                     renderApp();
@@ -603,6 +624,10 @@
                 return;
             }
 
+            // 每次儲存都產生一個單調遞增版本。Apps Script 會原樣保存這個版本；
+            // 讀回時如果發現遠端還是舊版本，就不允許舊資料蓋掉本機。
+            appState._syncVersion = Date.now();
+            pendingSyncVersion = appState._syncVersion;
             isSaving = true;
             saveLocalState();
 
@@ -628,17 +653,17 @@
 
                 form.appendChild(input);
                 document.body.appendChild(form);
-
-                // 背景送出：畫面不等待 Google Sheet 回傳，讓新增/編輯立即完成。
                 form.submit();
                 form.remove();
 
-                // 不再每次寫入後重新抓整份資料。
-                // 其他裝置仍會透過既有的 5 秒輪詢取得最新資料。
-                // 這樣可避免自己剛新增的資料被遠端回讀造成延遲或畫面跳動。
+                // 不再 1.2 秒後強制解除 isSaving。圖片轉存 Drive 可能需要較久，
+                // 改由下一次 GET 讀到相同 _syncVersion 時才正式確認完成。
                 setTimeout(() => {
-                    isSaving = false;
-                }, 1200);
+                    if (pendingSyncVersion === appState._syncVersion) {
+                        // 即使 Apps Script 回應較慢，也繼續保護本機資料；下一輪會再次確認。
+                        console.log("等待 Google Sheet 確認版本：", pendingSyncVersion);
+                    }
+                }, 1500);
 
             } catch (err) {
                 console.error("Google Sheet 同步寫入失敗:", err);
