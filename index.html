@@ -330,18 +330,17 @@
         <span id="toastMsg">操作成功</span>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+                // ==========================================
+        // 良興電商開飯｜Google Sheet 同步設定
+        // ==========================================
+        // 完成 Google Apps Script 後，把 Web App URL 貼在這裡。
+        const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqD28FgS6u8BI6Z3dEo_Kzv4h1S58jJdd7Fn6fQifmAp_vg3joJEizg4daq5PxJ8axOA/exec";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'lunch-order-app-shared-v2';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "demo", projectId: "demo" };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+        let syncTimer = null;
+        let isSaving = false;
 
-        let db, auth, userId = null;
-
-        let appState = {
+let appState = {
             currentDateId: "2026-09-08",
             dates: {
                 "2026-09-08": {
@@ -367,64 +366,82 @@
             }
         };
 
-        async function initFirebase() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                userId = auth.currentUser?.uid || crypto.randomUUID();
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) userId = user.uid;
-                });
-
-                // Use a truly shared public document path so all visitors sync the same data
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'sharedLunchStateGlobal');
-                
-                onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if (data && data.state) {
-                            appState = data.state;
-                            Object.keys(appState.dates || {}).forEach(k => {
-                                if (!appState.dates[k].restaurant) appState.dates[k].restaurant = "福隆便當 02-8982-0267";
-                                if (!appState.dates[k].collector) appState.dates[k].collector = "育靜";
-                                if (appState.dates[k].menuImageUrl === undefined) appState.dates[k].menuImageUrl = "";
-                            });
-                        }
-                    } else {
-                        setDoc(docRef, { state: appState });
-                    }
-                    renderApp();
-                }, (error) => {
-                    console.error("Firestore sync error:", error);
-                    renderApp();
-                });
-
-            } catch (err) {
-                console.warn("Firebase offline mode:", err);
+        async         async function initFirebase() {
+            // 保留原本函式名稱，避免影響其他程式。
+            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
+                console.warn("尚未設定 Google Apps Script URL，目前使用本機資料。");
                 renderApp();
+                return;
+            }
+
+            await loadStateFromSheet();
+            renderApp();
+
+            // 每 2 秒讀一次共享資料，讓同事看到接近即時的訂單更新。
+            if (syncTimer) clearInterval(syncTimer);
+            syncTimer = setInterval(loadStateFromSheet, 2000);
+        }
+
+        async function loadStateFromSheet() {
+            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) return;
+
+            try {
+                const res = await fetch(GOOGLE_APPS_SCRIPT_URL + "?t=" + Date.now(), {
+                    method: "GET",
+                    cache: "no-store"
+                });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+
+                const data = await res.json();
+
+                if (data && data.state && !isSaving) {
+                    const incoming = JSON.stringify(data.state);
+                    const current = JSON.stringify(appState);
+
+                    if (incoming !== current) {
+                        appState = data.state;
+
+                        Object.keys(appState.dates || {}).forEach(k => {
+                            if (!appState.dates[k].restaurant) appState.dates[k].restaurant = "福隆便當 02-8982-0267";
+                            if (!appState.dates[k].collector) appState.dates[k].collector = "育靜";
+                            if (appState.dates[k].menuImageUrl === undefined) appState.dates[k].menuImageUrl = "";
+                        });
+
+                        renderApp();
+                    }
+                }
+            } catch (err) {
+                console.warn("Google Sheet 同步讀取失敗:", err);
             }
         }
 
         async function syncStateToFirestore() {
-            if (!db) return;
+            // 函式名稱保留，實際改為同步到 Google Sheet。
+            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
+                console.warn("尚未設定 Google Apps Script URL，資料只存在目前瀏覽器。");
+                return;
+            }
+
+            isSaving = true;
+
             try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'sharedLunchStateGlobal');
-                await setDoc(docRef, { state: appState });
+                const payload = JSON.stringify({ state: appState });
+
+                await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: payload,
+                    mode: "no-cors"
+                });
             } catch (err) {
-                console.error("Failed to sync:", err);
+                console.error("Google Sheet 同步寫入失敗:", err);
+                showToast("同步失敗，請檢查網路或 Apps Script 設定");
+            } finally {
+                setTimeout(() => { isSaving = false; }, 1000);
             }
         }
 
-        function getActiveDateObj() {
+function getActiveDateObj() {
             if (!appState.dates[appState.currentDateId]) {
                 const firstKey = Object.keys(appState.dates)[0];
                 appState.currentDateId = firstKey;
