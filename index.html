@@ -89,9 +89,9 @@
                                 <th class="py-3 px-4 text-center w-16">序號</th>
                                 <th class="py-3 px-4">名字</th>
                                 <th class="py-3 px-4">主餐</th>
+                                <th class="py-3 px-4 text-left w-40">備註</th>
                                 <th class="py-3 px-4 text-right w-24">價格</th>
-                                <th class="py-3 px-4 text-center w-24">已付款</th>
-                                <th class="py-3 px-4 text-center w-20">操作</th>
+                                <th class="py-3 px-4 text-center w-28">已付款</th>
                             </tr>
                         </thead>
                         <tbody id="ordersTableBody" class="divide-y divide-slate-100 text-sm">
@@ -707,13 +707,11 @@
                         <td class="py-3 px-4 text-center font-medium text-slate-500">${index + 1}</td>
                         <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(order.name)}</td>
                         <td class="py-3 px-4 text-slate-700">${escapeHtml(order.dish)}</td>
+                        <td class="py-3 px-4 text-left text-slate-500 max-w-[180px]">${escapeHtml(order.note || '') || '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3 px-4 text-right font-medium text-slate-700">$${order.price}</td>
-                        <td class="py-3 px-4 text-left text-slate-500 max-w-[180px]">${escapeHtml(order.note || '')}</td>
                         <td class="py-3 px-4 text-center">
-                            <input type="checkbox" ${order.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="flex items-center justify-center gap-1">
+                            <div class="flex items-center justify-center gap-2">
+                                <input type="checkbox" ${order.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer" title="${order.paid ? '已付款' : '尚未付款'}">
                                 <button onclick="editOrder(${index})" class="p-1.5 text-slate-400 hover:text-blue-600 transition" title="編輯">
                                     <i class="fa-solid fa-pen text-xs"></i>
                                 </button>
