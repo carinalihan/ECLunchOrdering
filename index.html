@@ -339,35 +339,19 @@
 
         let syncTimer = null;
         let isSaving = false;
+        let syncFrame = null;
 
-let appState = {
-            currentDateId: "2026-09-08",
-            dates: {
-                "2026-09-08": {
-                    name: "9/8(二)",
-                    deadline: "9/8(二) 09:40 結單",
-                    restaurant: "福隆便當 02-8982-0267",
-                    collector: "育靜",
-                    title: "良興電商開飯",
-                    menuImageUrl: "",
-                    menu: [
-                        { name: "招牌便當", price: 80 },
-                        { name: "瘦肉便當", price: 80 },
-                        { name: "香腸便當", price: 80 },
-                        { name: "雞腿便當", price: 80 }
-                    ],
-                    orders: [
-                        { name: "育靜", dish: "雞腿便當", price: 80, paid: true },
-                        { name: "佳動", dish: "雞腿便當", price: 80, paid: true },
-                        { name: "Lulu", dish: "招牌便當", price: 80, paid: true },
-                        { name: "嘉儀", dish: "瘦肉便當", price: 80, paid: true }
-                    ]
-                }
-            }
-        };
+        function normalizeState(state) {
+            Object.keys(state?.dates || {}).forEach(k => {
+                if (!state.dates[k].restaurant) state.dates[k].restaurant = "福隆便當 02-8982-0267";
+                if (!state.dates[k].collector) state.dates[k].collector = "育靜";
+                if (state.dates[k].menuImageUrl === undefined) state.dates[k].menuImageUrl = "";
+            });
+            return state;
+        }
 
         async function initFirebase() {
-            // 保留原本函式名稱，避免影響其他程式。
+            // 保留原本函式名稱，實際改用 Google Apps Script + Google Sheet。
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
                 console.warn("尚未設定 Google Apps Script URL，目前使用本機資料。");
                 renderApp();
@@ -375,48 +359,64 @@ let appState = {
             }
 
             await loadStateFromSheet();
-            renderApp();
 
-            // 每 2 秒讀一次共享資料，讓同事看到接近即時的訂單更新。
             if (syncTimer) clearInterval(syncTimer);
-            syncTimer = setInterval(loadStateFromSheet, 2000);
+            syncTimer = setInterval(loadStateFromSheet, 3000);
         }
 
-        async function loadStateFromSheet() {
-            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) return;
+        function loadStateFromSheet() {
+            return new Promise((resolve) => {
+                if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
+                    renderApp();
+                    resolve();
+                    return;
+                }
 
-            try {
-                const res = await fetch(GOOGLE_APPS_SCRIPT_URL + "?t=" + Date.now(), {
-                    method: "GET",
-                    cache: "no-store"
-                });
-                if (!res.ok) throw new Error("HTTP " + res.status);
+                const callbackName = "__lunchSync_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+                const script = document.createElement("script");
+                const timeout = setTimeout(() => {
+                    cleanup();
+                    console.warn("Google Sheet 同步讀取逾時");
+                    renderApp();
+                    resolve();
+                }, 8000);
 
-                const data = await res.json();
+                function cleanup() {
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
 
-                if (data && data.state && !isSaving) {
-                    const incoming = JSON.stringify(data.state);
-                    const current = JSON.stringify(appState);
+                window[callbackName] = function(data) {
+                    cleanup();
 
-                    if (incoming !== current) {
-                        appState = data.state;
-
-                        Object.keys(appState.dates || {}).forEach(k => {
-                            if (!appState.dates[k].restaurant) appState.dates[k].restaurant = "福隆便當 02-8982-0267";
-                            if (!appState.dates[k].collector) appState.dates[k].collector = "育靜";
-                            if (appState.dates[k].menuImageUrl === undefined) appState.dates[k].menuImageUrl = "";
-                        });
-
+                    if (data && data.state && !isSaving) {
+                        appState = normalizeState(data.state);
+                        renderApp();
+                    } else {
                         renderApp();
                     }
-                }
-            } catch (err) {
-                console.warn("Google Sheet 同步讀取失敗:", err);
-            }
+
+                    resolve();
+                };
+
+                script.onerror = function() {
+                    cleanup();
+                    console.warn("Google Sheet 同步讀取失敗");
+                    renderApp();
+                    resolve();
+                };
+
+                script.src = GOOGLE_APPS_SCRIPT_URL
+                    + "?callback=" + encodeURIComponent(callbackName)
+                    + "&t=" + Date.now();
+
+                document.head.appendChild(script);
+            });
         }
 
-        async function syncStateToFirestore() {
-            // 函式名稱保留，實際改為同步到 Google Sheet。
+        function syncStateToFirestore() {
+            // 函式名稱保留，實際改為透過隱藏表單 POST 到 Google Apps Script。
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
                 console.warn("尚未設定 Google Apps Script URL，資料只存在目前瀏覽器。");
                 return;
@@ -425,23 +425,43 @@ let appState = {
             isSaving = true;
 
             try {
-                const payload = JSON.stringify({ state: appState });
+                if (!syncFrame) {
+                    syncFrame = document.createElement("iframe");
+                    syncFrame.name = "lunchSyncFrame";
+                    syncFrame.style.display = "none";
+                    document.body.appendChild(syncFrame);
+                }
 
-                await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: payload,
-                    mode: "no-cors"
-                });
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = GOOGLE_APPS_SCRIPT_URL;
+                form.target = "lunchSyncFrame";
+                form.style.display = "none";
+
+                const input = document.createElement("textarea");
+                input.name = "state";
+                input.value = JSON.stringify(appState);
+                input.style.display = "none";
+
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+                form.remove();
+
+                // 給 Apps Script 一點時間完成寫入，再恢復輪詢。
+                setTimeout(() => {
+                    isSaving = false;
+                    loadStateFromSheet();
+                }, 1800);
+
             } catch (err) {
                 console.error("Google Sheet 同步寫入失敗:", err);
-                showToast("同步失敗，請檢查網路或 Apps Script 設定");
-            } finally {
-                setTimeout(() => { isSaving = false; }, 1000);
+                isSaving = false;
+                showToast("同步失敗，請檢查 Google Apps Script");
             }
         }
 
-function getActiveDateObj() {
+        function getActiveDateObj() {
             if (!appState.dates[appState.currentDateId]) {
                 const firstKey = Object.keys(appState.dates)[0];
                 appState.currentDateId = firstKey;
