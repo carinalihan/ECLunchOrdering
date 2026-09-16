@@ -777,8 +777,9 @@
 
             closeEditCurrentDateModal();
             saveLocalState();
-            syncStateToFirestore();
             renderApp();
+            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
+            requestAnimationFrame(() => syncStateToFirestore());
             showToast("當日訂餐資訊已更新！");
         };
 
@@ -906,8 +907,9 @@
 
             closeEditMenuModal();
             saveLocalState();
-            syncStateToFirestore();
             renderApp();
+            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
+            requestAnimationFrame(() => syncStateToFirestore());
             showToast("菜單與店家圖片已更新！");
         };
 
@@ -1258,8 +1260,9 @@
             try { localStorage.setItem(LOCAL_SELECTED_DATE_KEY, dateId); } catch (e) {}
             closeNewDateModal();
             saveLocalState();
-            syncStateToFirestore();
             renderApp();
+            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
+            requestAnimationFrame(() => syncStateToFirestore());
             showToast(`已建立新日期頁籤：${dateName}`);
         };
 
@@ -1341,8 +1344,9 @@
 
             closeModal();
             saveLocalState();
-            syncStateToFirestore();
             renderApp();
+            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
+            requestAnimationFrame(() => syncStateToFirestore());
         };
 
         window.deleteCurrentDate = function() {
@@ -1364,8 +1368,9 @@
             appState.currentDateId = remainingIds[remainingIds.length - 1];
 
             saveLocalState();
-            syncStateToFirestore();
             renderApp();
+            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
+            requestAnimationFrame(() => syncStateToFirestore());
             showToast("已刪除當日訂餐資料");
         };
 
@@ -1373,8 +1378,9 @@
             const activeData = getActiveDateObj();
             activeData.orders.splice(index, 1);
             saveLocalState();
-            syncStateToFirestore();
             renderApp();
+            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
+            requestAnimationFrame(() => syncStateToFirestore());
             showToast("已刪除該筆訂單");
         };
 
@@ -1382,8 +1388,8 @@
             const activeData = getActiveDateObj();
             activeData.orders[index].paid = !activeData.orders[index].paid;
             saveLocalState();
-            syncStateToFirestore();
             renderSummary();
+            requestAnimationFrame(() => syncStateToFirestore());
         };
 
         function renderSummary() {
