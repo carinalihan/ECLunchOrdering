@@ -1171,7 +1171,13 @@
             document.getElementById('editIndex').value = index;
             document.getElementById('inputName').value = order.name;
             document.getElementById('inputDish').value = order.dish;
-            document.getElementById('inputPrice').value = order.price;
+            // 編輯訂單時，價格一律以「目前這一天的菜單主檔」為準，避免菜單已更新但仍顯示舊價格。
+            updatePriceFromDish();
+            // 若舊訂單的品項已不存在於目前菜單，才保留原本歷史價格。
+            const currentDish = (activeData.menu || []).find(m => m.name === order.dish);
+            if (!currentDish) {
+                document.getElementById('inputPrice').value = order.price;
+            }
             document.getElementById('inputPaid').checked = order.paid;
 
             document.getElementById('orderModal').classList.remove('hidden');
