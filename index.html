@@ -337,6 +337,37 @@
         // 完成 Google Apps Script 後，把 Web App URL 貼在這裡。
         const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqD28FgS6u8BI6Z3dEo_Kzv4h1S58jJdd7Fn6fQifmAp_vg3joJEizg4daq5PxJ8axOA/exec";
 
+
+        // ==========================================
+        // 良興電商開飯｜應用程式資料
+        // ==========================================
+        // 保留原本的初始資料，Google Sheet 讀取成功後會自動覆蓋。
+        let appState = {
+            currentDateId: "2026-09-08",
+            dates: {
+                "2026-09-08": {
+                    name: "9/8(二)",
+                    deadline: "9/8(二) 09:40 結單",
+                    restaurant: "福隆便當 02-8982-0267",
+                    collector: "育靜",
+                    title: "良興電商開飯",
+                    menuImageUrl: "",
+                    menu: [
+                        { name: "招牌便當", price: 80 },
+                        { name: "瘦肉便當", price: 80 },
+                        { name: "香腸便當", price: 80 },
+                        { name: "雞腿便當", price: 80 }
+                    ],
+                    orders: [
+                        { name: "育靜", dish: "雞腿便當", price: 80, paid: true },
+                        { name: "佳動", dish: "雞腿便當", price: 80, paid: true },
+                        { name: "Lulu", dish: "招牌便當", price: 80, paid: true },
+                        { name: "嘉儀", dish: "瘦肉便當", price: 80, paid: true }
+                    ]
+                }
+            }
+        };
+
         let syncTimer = null;
         let isSaving = false;
         let syncFrame = null;
