@@ -1150,7 +1150,8 @@
             event.preventDefault();
             const activeData = getActiveDateObj();
             const menuUrl = document.getElementById('menuUrlInput').value.trim();
-            const menuImageUrl = document.getElementById('menuImageUrl').value;
+            const menuImageUrlInput = document.getElementById('menuImageUrl');
+            const menuImageUrl = menuImageUrlInput.value || activeData.menuImageUrl || '';
             const rawText = document.getElementById('menuItemsTextarea').value;
 
             const newMenu = [];
@@ -1464,7 +1465,8 @@
             const id = document.getElementById('menuMasterId').value;
             const restaurant = document.getElementById('menuMasterRestaurant').value.trim();
             const menuUrl = document.getElementById('menuMasterUrl').value.trim();
-            const menuImageUrl = document.getElementById('menuMasterImageUrl').value;
+            const menuImageUrlInput = document.getElementById('menuMasterImageUrl');
+            const menuImageUrl = menuImageUrlInput.value || (id ? ((history.find(h => h.id === id) || {}).menuImageUrl || '') : '');
             const syncDates = document.getElementById('menuMasterSyncDates').checked;
             const newMenu = [];
             document.getElementById('menuMasterItems').value.split('\n').forEach(line => {
@@ -1533,7 +1535,7 @@
                 collector: collector,
                 title: inheritedTitle,
                 menuUrl: template ? (template.menuUrl || "") : "",
-                menuImageUrl: "",
+                menuImageUrl: template ? (template.menuImageUrl || "") : "",
                 menuSourceId: template ? template.id : "",
                 menu: inheritedMenu,
                 orders: []
