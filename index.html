@@ -636,6 +636,39 @@
         let menuMasterImageUploadToken = 0;
         const LOCAL_STATE_KEY = "eclunchordering_state_v3";
         const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
+        // 圖片獨立備份：即使遠端回傳的完整 state 暫時沒有圖片，也能從本機還原。
+        const LOCAL_IMAGE_BACKUP_KEY = "eclunchordering_image_backup_v1";
+
+        function getLocalImageBackup() {
+            try {
+                return JSON.parse(localStorage.getItem(LOCAL_IMAGE_BACKUP_KEY) || '{}');
+            } catch (e) { return {}; }
+        }
+
+        function saveLocalImageBackup(dateId, imageUrl) {
+            if (!dateId || !imageUrl) return;
+            try {
+                const backup = getLocalImageBackup();
+                backup[dateId] = imageUrl;
+                localStorage.setItem(LOCAL_IMAGE_BACKUP_KEY, JSON.stringify(backup));
+            } catch (e) {
+                console.warn("圖片本機備份失敗", e);
+            }
+        }
+
+        function restoreImageBackups(state) {
+            if (!state || !state.dates) return false;
+            const backup = getLocalImageBackup();
+            let changed = false;
+            Object.keys(backup).forEach(dateId => {
+                const dateObj = state.dates[dateId];
+                if (dateObj && backup[dateId] && !dateObj.menuImageUrl) {
+                    dateObj.menuImageUrl = backup[dateId];
+                    changed = true;
+                }
+            });
+            return changed;
+        }
 
         function saveLocalState() {
             try {
@@ -652,6 +685,7 @@
                 const saved = JSON.parse(raw);
                 if (saved && saved.dates && typeof saved.dates === "object") {
                     appState = normalizeState(saved);
+                    restoreImageBackups(appState);
                     // 若上一次儲存尚未被遠端確認，先保護本機版本，避免重新整理時被舊資料蓋掉。
                     pendingSyncVersion = Number(appState._syncVersion || 0);
                     isSaving = pendingSyncVersion > 0;
@@ -765,6 +799,8 @@
                         let selectedDateId = null;
                         try { selectedDateId = localStorage.getItem(LOCAL_SELECTED_DATE_KEY); } catch (e) {}
                         const incoming = normalizeState(data.state);
+                        // 先用本機獨立圖片備份補回遠端暫時遺失的圖片。
+                        const backupRestored = restoreImageBackups(incoming);
 
                         // HTML-only 防護：即使遠端回傳的是較舊/尚未包含圖片的狀態，
                         // 只要本機仍保有剛上傳的圖片，就不要讓空值把圖片洗掉。
@@ -793,6 +829,11 @@
                             appState.currentDateId = selectedDateId;
                         }
                         saveLocalState();
+                        if (backupRestored && pendingSyncVersion === 0) {
+                            // 遠端曾經沒有圖片時，自動把本機備份重新送回共用資料。
+                            // 只在「補回圖片」時觸發，不改其他資料。
+                            requestAnimationFrame(() => syncStateToFirestore());
+                        }
 
                         if (pendingSyncVersion > 0 && incomingVersion >= pendingSyncVersion) {
                             pendingSyncVersion = 0;
@@ -1092,6 +1133,9 @@
                 document.getElementById('menuImageUrl').value = compressed;
                 document.getElementById('menuImagePreview').src = compressed;
                 document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
+                saveLocalImageBackup(getActiveDateObj() ? appState.currentDateId : '', compressed);
+                // 同步前先把圖片放進本機獨立備份，避免背景回讀時遺失。
+                saveLocalState();
                 showToast('菜單圖片已上傳');
                 // 清空 file input，之後即使重新選同一個檔案，也一定會觸發 onchange。
                 fileInput.value = '';
@@ -1127,6 +1171,7 @@
             }
             activeData.menuUrl = menuUrl;
             activeData.menuImageUrl = menuImageUrl;
+            if (menuImageUrl) saveLocalImageBackup(appState.currentDateId, menuImageUrl);
             const master = findOrCreateMenuMaster(activeData);
             if (master) {
                 master.restaurant = activeData.restaurant || master.restaurant;
