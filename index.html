@@ -765,6 +765,29 @@
                         let selectedDateId = null;
                         try { selectedDateId = localStorage.getItem(LOCAL_SELECTED_DATE_KEY); } catch (e) {}
                         const incoming = normalizeState(data.state);
+
+                        // HTML-only 防護：即使遠端回傳的是較舊/尚未包含圖片的狀態，
+                        // 只要本機仍保有剛上傳的圖片，就不要讓空值把圖片洗掉。
+                        // 這只保護圖片欄位，不碰訂單、付款、日期等其他資料。
+                        const localStateBeforeRemote = appState;
+                        Object.keys(localStateBeforeRemote.dates || {}).forEach(dateId => {
+                            const localDate = localStateBeforeRemote.dates[dateId];
+                            const remoteDate = incoming.dates && incoming.dates[dateId];
+                            if (!localDate || !remoteDate) return;
+                            if (localDate.menuImageUrl && !remoteDate.menuImageUrl) {
+                                remoteDate.menuImageUrl = localDate.menuImageUrl;
+                            }
+                        });
+                        if (Array.isArray(localStateBeforeRemote.menuHistory) && Array.isArray(incoming.menuHistory)) {
+                            const localHistoryById = new Map(localStateBeforeRemote.menuHistory.map(h => [h.id, h]));
+                            incoming.menuHistory.forEach(h => {
+                                const localH = localHistoryById.get(h.id);
+                                if (localH && localH.menuImageUrl && !h.menuImageUrl) {
+                                    h.menuImageUrl = localH.menuImageUrl;
+                                }
+                            });
+                        }
+
                         appState = incoming;
                         if (selectedDateId && appState.dates && appState.dates[selectedDateId]) {
                             appState.currentDateId = selectedDateId;
@@ -835,8 +858,7 @@
                 form.submit();
                 form.remove();
 
-                // 不再 1.2 秒後強制解除 isSaving。圖片轉存 Drive 可能需要較久，
-                // 改由下一次 GET 讀到相同 _syncVersion 時才正式確認完成。
+                // 不再用固定秒數解除 isSaving；等下一次 GET 確認版本，避免舊資料覆蓋新圖片。
                 setTimeout(() => {
                     if (pendingSyncVersion === appState._syncVersion) {
                         // 即使 Apps Script 回應較慢，也繼續保護本機資料；下一輪會再次確認。
