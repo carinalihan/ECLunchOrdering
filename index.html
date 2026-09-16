@@ -283,7 +283,7 @@
                                 <th class="py-3 px-4 text-center w-16">序號</th>
                                 <th class="py-3 px-4">名字</th>
                                 <th class="py-3 px-4">主餐</th>
-                                <th class="py-3 px-4 text-left w-40">備註</th>
+                                <th class="py-3 px-4 text-left w-40">備註(<strong>可許願，不保證</strong>)</th>
                                 <th class="py-3 px-4 text-right w-24">價格</th>
                                 <th class="py-3 px-4 text-center w-40 min-w-[160px]">已付款</th>
                             </tr>
@@ -401,7 +401,7 @@
                     <input type="number" id="inputPrice" required value="80" readonly class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 cursor-not-allowed text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">備註（選填）</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">備註（可許願，但不保證）</label>
                     <input type="text" id="inputNote" maxlength="100" placeholder="例如：不要辣、少飯、加蛋" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
                 <div class="flex items-center gap-2 pt-1">
@@ -432,7 +432,7 @@
                     <p class="text-xs text-slate-400 mt-1">只儲存網址，不會顯示圖片預覽。</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填）</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填，上傳100K以下）</label>
                     <input type="file" id="menuImageFile" accept="image/*" onchange="handleMenuImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
                     <input type="hidden" id="menuImageUrl" value="">
                     <div id="menuImagePreviewContainer" class="mt-2 hidden">
@@ -576,7 +576,7 @@
                     <p class="text-xs text-slate-400 mt-1">只儲存網址，不會自動顯示圖片預覽。</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填）</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填，上傳100K以下）</label>
                     <input type="file" id="menuMasterImageFile" accept="image/*" onchange="handleMenuMasterImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     <input type="hidden" id="menuMasterImageUrl" value="">
                     <div id="menuMasterImagePreviewContainer" class="mt-2 hidden">
