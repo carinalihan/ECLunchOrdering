@@ -371,6 +371,30 @@
         let syncTimer = null;
         let isSaving = false;
         let syncFrame = null;
+        const LOCAL_STATE_KEY = "eclunchordering_state_v3";
+
+        function saveLocalState() {
+            try {
+                localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(appState));
+            } catch (err) {
+                console.warn("本機資料儲存失敗", err);
+            }
+        }
+
+        function loadLocalState() {
+            try {
+                const raw = localStorage.getItem(LOCAL_STATE_KEY);
+                if (!raw) return false;
+                const saved = JSON.parse(raw);
+                if (saved && saved.dates && typeof saved.dates === "object") {
+                    appState = normalizeState(saved);
+                    return true;
+                }
+            } catch (err) {
+                console.warn("本機資料讀取失敗", err);
+            }
+            return false;
+        }
 
         function normalizeState(state) {
             if (!state || typeof state !== "object") return state;
@@ -385,9 +409,11 @@
         }
 
         async function initFirebase() {
-            // 保留原本函式名稱，實際使用 Google Apps Script + Google Sheet。
+            // 先使用本機快取，確保即使 Google Apps Script 暫時失敗，按鈕仍可正常使用。
+            loadLocalState();
+            renderApp();
+
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
-                renderApp();
                 return;
             }
 
@@ -432,6 +458,7 @@
                 window[callbackName] = function(data) {
                     if (data && data.ok && data.state) {
                         appState = normalizeState(data.state);
+                        saveLocalState();
                     }
 
                     renderApp();
@@ -461,6 +488,7 @@
             }
 
             isSaving = true;
+            saveLocalState();
 
             try {
                 if (!syncFrame) {
@@ -625,6 +653,7 @@
             activeData.deadline = document.getElementById('inputEditDateDeadline').value.trim() || activeData.deadline;
 
             closeEditCurrentDateModal();
+            saveLocalState();
             syncStateToFirestore();
             renderApp();
             showToast("當日訂餐資訊已更新！");
@@ -703,6 +732,7 @@
             activeData.menuImageUrl = menuImageUrl;
 
             closeEditMenuModal();
+            saveLocalState();
             syncStateToFirestore();
             renderApp();
             showToast("菜單與店家圖片已更新！");
@@ -746,6 +776,7 @@
 
             appState.currentDateId = dateId;
             closeNewDateModal();
+            saveLocalState();
             syncStateToFirestore();
             renderApp();
             showToast(`已建立新日期頁籤：${dateName}`);
@@ -819,6 +850,7 @@
             }
 
             closeModal();
+            saveLocalState();
             syncStateToFirestore();
             renderApp();
         };
@@ -826,6 +858,7 @@
         window.deleteOrder = function(index) {
             const activeData = getActiveDateObj();
             activeData.orders.splice(index, 1);
+            saveLocalState();
             syncStateToFirestore();
             renderApp();
             showToast("已刪除該筆訂單");
@@ -834,6 +867,7 @@
         window.togglePaid = function(index) {
             const activeData = getActiveDateObj();
             activeData.orders[index].paid = !activeData.orders[index].paid;
+            saveLocalState();
             syncStateToFirestore();
             renderSummary();
         };
@@ -906,8 +940,19 @@
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
+        window.addEventListener("error", function(event) {
+            console.error("頁面 JavaScript 錯誤:", event.error || event.message);
+        });
+
         window.onload = function() {
-            initFirebase();
+            try {
+                loadLocalState();
+                renderApp();
+                initFirebase();
+            } catch (err) {
+                console.error("初始化失敗:", err);
+                showToast("頁面初始化失敗，請重新整理");
+            }
         };
     </script>
 </body>
