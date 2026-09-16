@@ -847,12 +847,27 @@
         };
 
         window.openNewDateModal = function() {
+            const modal = document.getElementById('newDateModal');
+            if (!modal) return;
+
+            // 先打開視窗，再準備菜單資料；即使歷史菜單資料有問題，新增日期視窗仍然可以正常開啟。
             document.getElementById('inputNewDateName').value = '';
             document.getElementById('inputNewDateRestaurant').value = "福隆便當 02-8982-0267";
             document.getElementById('inputNewDateCollector').value = "育靜";
             document.getElementById('inputNewDateDeadline').value = '';
-            populateMenuTemplates();
-            document.getElementById('newDateModal').classList.remove('hidden');
+            modal.classList.remove('hidden');
+
+            try {
+                if (typeof window.populateMenuTemplates === 'function') {
+                    window.populateMenuTemplates();
+                }
+            } catch (err) {
+                console.error('載入歷史菜單失敗:', err);
+                const select = document.getElementById('menuTemplateSelect');
+                const preview = document.getElementById('menuTemplatePreview');
+                if (select) select.innerHTML = '<option value="">使用目前日期菜單</option>';
+                if (preview) preview.classList.add('hidden');
+            }
         };
 
         window.closeNewDateModal = function() {
@@ -1075,8 +1090,9 @@
 
             const dateId = 'date_' + Date.now();
             const activeData = getActiveDateObj();
-            const templateId = document.getElementById('menuTemplateSelect').value;
-            const template = getMenuHistory().find(h => h.id === templateId);
+            const templateSelect = document.getElementById('menuTemplateSelect');
+            const templateId = templateSelect ? templateSelect.value : '';
+            const template = templateId ? getMenuHistory().find(h => h.id === templateId) : null;
             const inheritedMenu = template
                 ? JSON.parse(JSON.stringify(template.menu || []))
                 : JSON.parse(JSON.stringify(activeData.menu || []));
