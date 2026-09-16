@@ -643,7 +643,7 @@
         window.renderApp = function() {
             const activeData = getActiveDateObj();
 
-            document.getElementById('headerTitle').innerText = activeData.title || "良興電商 午餐食刻！";
+            document.getElementById('headerTitle').innerText = "良興電商 午餐食刻！";
             document.getElementById('headerDeadline').innerText = activeData.deadline || "";
             document.getElementById('headerRestaurant').innerText = activeData.restaurant || "福隆便當 02-8982-0267";
             document.getElementById('headerCollector').innerText = activeData.collector || "育靜";
@@ -1136,7 +1136,7 @@
             const inheritedMenu = template
                 ? JSON.parse(JSON.stringify(template.menu || []))
                 : JSON.parse(JSON.stringify(activeData.menu || []));
-            const inheritedTitle = activeData.title || "良興電商 午餐食刻！";
+            const inheritedTitle = "良興電商 午餐食刻！";
 
             appState.dates[dateId] = {
                 name: dateName,
