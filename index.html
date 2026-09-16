@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>良興電商 午餐食刻！</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-blue-600 p-2.5 rounded-xl shadow font-bold text-xl">
+                    <i class="fa-solid fa-utensils"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight" id="headerTitle">良興電商 午餐食刻！</h1>
+                    <p class="text-blue-100 text-sm">E-Commerce Lunch Ordering</p>
+                </div>
+            </div>
+
+            <!-- Prominent Restaurant & Collector Banner in Center/Header -->
+            <div class="flex flex-wrap items-center justify-center gap-3 bg-blue-700/80 px-5 py-2.5 rounded-2xl border border-blue-400/30 shadow-inner">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-store text-yellow-300 text-lg"></i>
+                    <span id="headerRestaurant" class="text-lg font-bold text-white tracking-wide">福隆便當 02-8982-0267</span>
+                </div>
+                <div class="text-blue-200 text-sm border-l border-blue-400/40 pl-3 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wallet text-blue-200"></i>
+                    <span>收錢：<strong id="headerCollector" class="text-white font-semibold">育靜</strong></span>
+                </div>
+                <div class="text-blue-200 text-sm border-l border-blue-400/40 pl-3 flex items-center gap-1.5">
+                    <i class="fa-regular fa-clock text-blue-200"></i>
+                    <span id="headerDeadline">9/8(二) 09:40 結單</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Top right actions removed -->
+            </div>
+        </div>
+    </header>
+
+    <div class="bg-white border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between overflow-x-auto py-2.5 gap-2">
+            <div id="dateTabsContainer" class="flex items-center gap-2 overflow-x-auto py-1">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button onclick="openNewDateModal()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm border border-blue-200 transition flex items-center gap-1">
+                    <i class="fa-solid fa-calendar-plus"></i> 新增日期
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Order Form & Table (Col 8) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+
+            <!-- Action Bar -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-plus"></i> 新增訂單
+                    </button>
+                    <!-- View Menu Button if menu image exists -->
+                    <button id="viewMenuBtn" onclick="openMenuLightbox()" class="hidden bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium px-4 py-2.5 rounded-xl border border-emerald-200 transition flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-image"></i> 查看店家菜單
+                    </button>
+                </div>
+            </div>
+
+            <!-- Orders Table Container -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider font-semibold">
+                                <th class="py-3 px-4 text-center w-16">序號</th>
+                                <th class="py-3 px-4">名字</th>
+                                <th class="py-3 px-4">主餐</th>
+                                <th class="py-3 px-4 text-right w-24">價格</th>
+                                <th class="py-3 px-4 text-center w-24">已付款</th>
+                                <th class="py-3 px-4 text-center w-20">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-clipboard-list text-4xl mb-2"></i>
+                    <p>目前還沒有人填寫訂單，點擊上方按鈕新增！</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Summary Cards & Breakdown (Col 4) -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+
+            <!-- Total Amount Card -->
+            <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-6 rounded-2xl shadow-md flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium">總金額 (Total)</p>
+                    <h2 class="text-4xl font-extrabold mt-1" id="grandTotalAmt">$0</h2>
+                </div>
+                <div class="bg-white/15 p-4 rounded-2xl backdrop-blur-sm border border-white/20 text-center min-w-[90px]">
+                    <span class="block text-xs text-blue-100">總人數</span>
+                    <span class="text-2xl font-bold" id="totalCount">0</span>
+                </div>
+            </div>
+
+            <!-- Dish Breakdown Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col">
+                <div class="flex items-center justify-between mb-4 border-b pb-3">
+                    <h3 class="font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-chart-pie text-blue-600 mr-2"></i>主餐統計數量
+                    </h3>
+                    <button onclick="openEditMenuModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition font-medium">
+                        <i class="fa-solid fa-gear mr-1"></i> 設定菜單/圖片
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="text-slate-400 text-xs border-b pb-2">
+                                <th class="pb-2 font-medium w-12 text-center">編號</th>
+                                <th class="pb-2 font-medium">主餐</th>
+                                <th class="pb-2 font-medium text-center">單價</th>
+                                <th class="pb-2 font-medium text-center">數量</th>
+                                <th class="pb-2 font-medium text-right">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody id="breakdownTableBody" class="divide-y divide-slate-50">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Tips Box -->
+            <div class="bg-blue-50 border border-blue-200/60 rounded-2xl p-4 text-xs text-blue-800 leading-relaxed">
+                <div class="font-bold flex items-center gap-1.5 mb-1 text-blue-900">
+                    <i class="fa-solid fa-circle-info text-blue-600"></i> 使用說明小貼士
+                </div>
+                <ul class="list-disc pl-4 space-y-1 text-blue-800/90">
+                    <li>點擊「新增訂單」可以填寫名字與選擇主餐。</li>
+                    <li>點擊右側「設定菜單/圖片」可以設定菜單網址，或另外上傳菜單圖片。</li>
+                    <li>勾選「已付款」可即時標記收錢狀態。</li>
+                </ul>
+            </div>
+
+            <!-- Edit Current Date Button at Bottom Right -->
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="openEditCurrentDateModal()" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-blue-50 cursor-pointer">
+                    <i class="fa-solid fa-pen-to-square"></i> 編輯當日內容
+                </button>
+                <button onclick="deleteCurrentDate()" class="text-rose-600 hover:text-rose-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-rose-50 cursor-pointer">
+                    <i class="fa-solid fa-trash"></i> 刪除日期
+                </button>
+                <button onclick="openMenuLibraryModal()" class="text-emerald-600 hover:text-emerald-800 text-xs font-semibold transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-emerald-50 cursor-pointer">
+                    <i class="fa-solid fa-book-open"></i> 全部菜單
+                </button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Order Modal -->
+    <div id="orderModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-800">新增訂單</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="orderForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editIndex" value="">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">名字</label>
+                    <input type="text" id="inputName" required placeholder="例如：育靜" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">選擇主餐</label>
+                    <select id="inputDish" onchange="updatePriceFromDish()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                        <!-- Options generated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">價格 (NT$)</label>
+                    <input type="number" id="inputPrice" required value="80" readonly class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 cursor-not-allowed text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">備註（選填）</label>
+                    <input type="text" id="inputNote" maxlength="100" placeholder="例如：不要辣、少飯、加蛋" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="inputPaid" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                    <label for="inputPaid" class="text-sm font-medium text-slate-700 select-none">已付款</label>
+                </div>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Menu & Menu Image Modal -->
+    <div id="editMenuModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">設定菜單網址與店家菜單圖片</h3>
+                <button onclick="closeEditMenuModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleEditMenuSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單網址 (URL)</label>
+                    <input type="url" id="menuUrlInput" placeholder="https://example.com/menu" class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <p class="text-xs text-slate-400 mt-1">只儲存網址，不會顯示圖片預覽。</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填）</label>
+                    <input type="file" id="menuImageFile" accept="image/*" onchange="handleMenuImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                    <input type="hidden" id="menuImageUrl" value="">
+                    <div id="menuImagePreviewContainer" class="mt-2 hidden">
+                        <img id="menuImagePreview" src="" alt="菜單預覽" class="w-32 h-32 object-cover rounded-xl border border-slate-200 shadow-sm cursor-pointer" onclick="openLightbox(this.src)">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單品項與價格設定 (格式: 品項名稱,價格 每行一項)</label>
+                    <textarea id="menuItemsTextarea" rows="5" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" placeholder="招牌便當,80&#10;瘦肉便當,80&#10;香腸便當,80&#10;雞腿便當,80"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeEditMenuModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">儲存菜單設定</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Current Date Modal -->
+    <div id="editCurrentDateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">編輯當日訂餐資訊</h3>
+                <button onclick="closeEditCurrentDateModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleEditCurrentDateSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">日期名稱 (例如: 9/8(二))</label>
+                    <input type="text" id="inputEditDateName" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">餐廳與電話</label>
+                    <input type="text" id="inputEditDateRestaurant" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">收錢人</label>
+                    <input type="text" id="inputEditDateCollector" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">結單時間</label>
+                    <input type="text" id="inputEditDateDeadline" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeEditCurrentDateModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">儲存變更</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div id="lightboxModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" onclick="closeLightbox()">
+        <div class="relative max-w-3xl max-h-[90vh]">
+            <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white hover:text-slate-300 text-2xl font-bold p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="lightboxImage" src="" alt="放大圖片" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain">
+        </div>
+    </div>
+
+    <!-- New Date Modal -->
+    <div id="newDateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">新增訂餐日期</h3>
+                <button onclick="closeNewDateModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleNewDateSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">日期名稱 (例如: 9/9(三))</label>
+                    <input type="text" id="inputNewDateName" required placeholder="9/9(三)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">餐廳與電話</label>
+                    <input type="text" id="inputNewDateRestaurant" placeholder="福隆便當 02-8982-0267" value="福隆便當 02-8982-0267" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">收錢人</label>
+                    <input type="text" id="inputNewDateCollector" placeholder="育靜" value="育靜" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">結單時間 (例如: 9/9(三) 09:40 結單)</label>
+                    <input type="text" id="inputNewDateDeadline" placeholder="9/9(三) 09:40 結單" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單來源</label>
+                    <select id="menuTemplateSelect" onchange="applyMenuTemplate(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                    </select>
+                    <p class="text-xs text-slate-400 mt-1">可直接帶入之前建立過的菜單；只帶入菜單，不會帶入之前的訂單。</p>
+                </div>
+                <div id="menuTemplatePreview" class="hidden rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600"></div>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button type="button" onclick="closeNewDateModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">建立日期</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Menu Library Modal -->
+    <div id="menuLibraryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">📋 全部菜單</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">修改菜單主檔後，可同步到使用這份菜單的日期；刪除主檔不會刪除既有訂單</p>
+                </div>
+                <button onclick="closeMenuLibraryModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="menuLibraryList" class="p-5 overflow-y-auto space-y-3"></div>
+            <div class="px-6 py-4 border-t border-slate-200 flex justify-between items-center">
+                <button onclick="openNewMenuMasterModal()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"><i class="fa-solid fa-plus mr-1"></i>建立新菜單</button>
+                <button onclick="closeMenuLibraryModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Menu Master Modal -->
+    <div id="menuMasterEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 id="menuMasterModalTitle" class="text-lg font-bold text-slate-800">編輯菜單</h3>
+                    <p class="text-xs text-slate-400 mt-1">這裡是菜單主檔，之後新增日期可以直接套用</p>
+                </div>
+                <button onclick="closeMenuMasterModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleMenuMasterSubmit(event)" class="space-y-4">
+                <input type="hidden" id="menuMasterId" value="">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">餐廳與電話</label>
+                    <input type="text" id="menuMasterRestaurant" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單網址（選填）</label>
+                    <input type="url" id="menuMasterUrl" placeholder="https://..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">品項與價格（每行：品項,價格）</label>
+                    <textarea id="menuMasterItems" rows="7" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"></textarea>
+                </div>
+                <label class="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-100 p-3 cursor-pointer">
+                    <input type="checkbox" id="menuMasterSyncDates" checked class="mt-1 w-4 h-4 text-emerald-600 rounded">
+                    <span class="text-xs text-emerald-800"><strong>同步到已使用這份菜單的日期</strong><br>會更新餐廳與菜單，但<strong>不會改掉已存在訂單的實際付款金額</strong>。</span>
+                </label>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeMenuMasterModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">儲存並更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 text-sm flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-blue-400"></i>
+        <span id="toastMsg">操作成功</span>
+    </div>
+
+    <script>
+                // ==========================================
+        // 良興電商 午餐食刻！｜Google Sheet 同步設定
+        // ==========================================
+        // 完成 Google Apps Script 後，把 Web App URL 貼在這裡。
+        const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqD28FgS6u8BI6Z3dEo_Kzv4h1S58jJdd7Fn6fQifmAp_vg3joJEizg4daq5PxJ8axOA/exec";
+
+
+        // ==========================================
+        // 良興電商 午餐食刻！｜應用程式資料
+        // ==========================================
+        // 保留原本的初始資料，Google Sheet 讀取成功後會自動覆蓋。
+        let appState = {
+            currentDateId: "2026-09-08",
+            menuHistory: [],
+            dates: {
+                "2026-09-08": {
+                    name: "9/8(二)",
+                    deadline: "9/8(二) 09:40 結單",
+                    restaurant: "福隆便當 02-8982-0267",
+                    collector: "育靜",
+                    title: "良興電商 午餐食刻！",
+                    menuUrl: "",
+                    menuImageUrl: "",
+                    menu: [
+                        { name: "招牌便當", price: 80 },
+                        { name: "瘦肉便當", price: 80 },
+                        { name: "香腸便當", price: 80 },
+                        { name: "雞腿便當", price: 80 }
+                    ],
+                    orders: [
+                        { name: "育靜", dish: "雞腿便當", price: 80, paid: true },
+                        { name: "佳動", dish: "雞腿便當", price: 80, paid: true },
+                        { name: "Lulu", dish: "招牌便當", price: 80, paid: true },
+                        { name: "嘉儀", dish: "瘦肉便當", price: 80, paid: true }
+                    ]
+                }
+            }
+        };
+
+        let syncTimer = null;
+        let isSaving = false;
+        let syncFrame = null;
+        const LOCAL_STATE_KEY = "eclunchordering_state_v3";
+        const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
+
+        function saveLocalState() {
+            try {
+                localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(appState));
+            } catch (err) {
+                console.warn("本機資料儲存失敗", err);
+            }
+        }
+
+        function loadLocalState() {
+            try {
+                const raw = localStorage.getItem(LOCAL_STATE_KEY);
+                if (!raw) return false;
+                const saved = JSON.parse(raw);
+                if (saved && saved.dates && typeof saved.dates === "object") {
+                    appState = normalizeState(saved);
+                    try {
+                        const selected = localStorage.getItem(LOCAL_SELECTED_DATE_KEY);
+                        if (selected && appState.dates[selected]) appState.currentDateId = selected;
+                    } catch (e) {}
+                    return true;
+                }
+            } catch (err) {
+                console.warn("本機資料讀取失敗", err);
+            }
+            return false;
+        }
+
+        function normalizeState(state) {
+            if (!state || typeof state !== "object") return state;
+
+            if (!Array.isArray(state.menuHistory)) state.menuHistory = [];
+            Object.keys(state.dates || {}).forEach(k => {
+                if (!state.dates[k].restaurant) state.dates[k].restaurant = "福隆便當 02-8982-0267";
+                if (!state.dates[k].collector) state.dates[k].collector = "育靜";
+                if (state.dates[k].menuUrl === undefined) state.dates[k].menuUrl = "";
+                if (state.dates[k].menuImageUrl === undefined) state.dates[k].menuImageUrl = "";
+                if (state.dates[k].menuSourceId === undefined) state.dates[k].menuSourceId = "";
+                if (!Array.isArray(state.dates[k].menu)) state.dates[k].menu = [];
+            });
+
+            // 舊資料升級：把既有日期曾使用過的菜單自動建立成歷史菜單。
+            const addHistory = (dateObj) => {
+                const menu = Array.isArray(dateObj.menu) ? dateObj.menu : [];
+                if (!menu.length) return;
+                const key = JSON.stringify(menu);
+                const exists = state.menuHistory.some(h => JSON.stringify(h.menu || []) === key && (h.restaurant || '') === (dateObj.restaurant || ''));
+                if (!exists) {
+                    state.menuHistory.push({
+                        id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                        name: dateObj.restaurant || '歷史菜單',
+                        restaurant: dateObj.restaurant || '',
+                        menuUrl: dateObj.menuUrl || '',
+                        menuImageUrl: dateObj.menuImageUrl || '',
+                        menu: JSON.parse(JSON.stringify(menu)),
+                        lastUsed: dateObj.name || ''
+                    });
+                }
+            };
+            Object.values(state.dates || {}).forEach(addHistory);
+            return state;
+        }
+
+        async function initFirebase() {
+            // 先使用本機快取，確保即使 Google Apps Script 暫時失敗，按鈕仍可正常使用。
+            loadLocalState();
+            renderApp();
+
+            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
+                return;
+            }
+
+            await loadStateFromSheet();
+
+            // 只在成功建立同步後輪詢；輪詢期間不會覆蓋正在儲存的本機資料。
+            if (syncTimer) clearInterval(syncTimer);
+            syncTimer = setInterval(() => {
+                if (!isSaving) loadStateFromSheet();
+            }, 5000);
+        }
+
+        function loadStateFromSheet() {
+            return new Promise((resolve) => {
+                if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
+                    renderApp();
+                    resolve();
+                    return;
+                }
+
+                const callbackName =
+                    "__lunchSync_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+
+                const script = document.createElement("script");
+                let finished = false;
+
+                const finish = () => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    resolve();
+                };
+
+                const timeout = setTimeout(() => {
+                    console.warn("Google Sheet 同步讀取逾時");
+                    renderApp();
+                    finish();
+                }, 10000);
+
+                window[callbackName] = function(data) {
+                    if (data && data.ok && data.state) {
+                        let selectedDateId = null;
+                        try { selectedDateId = localStorage.getItem(LOCAL_SELECTED_DATE_KEY); } catch (e) {}
+                        const incoming = normalizeState(data.state);
+                        appState = incoming;
+                        if (selectedDateId && appState.dates && appState.dates[selectedDateId]) {
+                            appState.currentDateId = selectedDateId;
+                        }
+                        saveLocalState();
+                    }
+
+                    renderApp();
+                    finish();
+                };
+
+                script.onerror = function() {
+                    console.warn("Google Sheet 同步讀取失敗");
+                    renderApp();
+                    finish();
+                };
+
+                script.src =
+                    GOOGLE_APPS_SCRIPT_URL +
+                    "?callback=" + encodeURIComponent(callbackName) +
+                    "&t=" + Date.now();
+
+                document.head.appendChild(script);
+            });
+        }
+
+        function syncStateToFirestore() {
+            // 函式名稱保留，實際改為透過隱藏 HTML form POST。
+            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
+                console.warn("尚未設定 Google Apps Script URL");
+                return;
+            }
+
+            isSaving = true;
+            saveLocalState();
+
+            try {
+                if (!syncFrame) {
+                    syncFrame = document.createElement("iframe");
+                    syncFrame.name = "lunchSyncFrame";
+                    syncFrame.style.display = "none";
+                    document.body.appendChild(syncFrame);
+                }
+
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = GOOGLE_APPS_SCRIPT_URL;
+                form.target = "lunchSyncFrame";
+                form.enctype = "application/x-www-form-urlencoded";
+                form.style.display = "none";
+
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "state";
+                input.value = JSON.stringify(appState);
+
+                form.appendChild(input);
+                document.body.appendChild(form);
+
+                // 背景送出：畫面不等待 Google Sheet 回傳，讓新增/編輯立即完成。
+                form.submit();
+                form.remove();
+
+                // 不再每次寫入後重新抓整份資料。
+                // 其他裝置仍會透過既有的 5 秒輪詢取得最新資料。
+                // 這樣可避免自己剛新增的資料被遠端回讀造成延遲或畫面跳動。
+                setTimeout(() => {
+                    isSaving = false;
+                }, 1200);
+
+            } catch (err) {
+                console.error("Google Sheet 同步寫入失敗:", err);
+                isSaving = false;
+                showToast("同步失敗，請檢查 Google Apps Script");
+            }
+        }
+
+        function getActiveDateObj() {
+            if (!appState.dates[appState.currentDateId]) {
+                const firstKey = Object.keys(appState.dates)[0];
+                appState.currentDateId = firstKey;
+            }
+            return appState.dates[appState.currentDateId];
+        }
+
+        window.renderApp = function() {
+            const activeData = getActiveDateObj();
+
+            document.getElementById('headerTitle').innerText = "良興電商 午餐食刻！";
+            document.getElementById('headerDeadline').innerText = activeData.deadline || "";
+            document.getElementById('headerRestaurant').innerText = activeData.restaurant || "福隆便當 02-8982-0267";
+            document.getElementById('headerCollector').innerText = activeData.collector || "育靜";
+
+            const viewMenuBtn = document.getElementById('viewMenuBtn');
+            if (activeData.menuImageUrl || activeData.menuUrl) {
+                viewMenuBtn.classList.remove('hidden');
+                viewMenuBtn.innerHTML = activeData.menuUrl
+                    ? '<i class="fa-solid fa-link"></i> 開啟店家菜單'
+                    : '<i class="fa-solid fa-image"></i> 查看店家菜單';
+            } else {
+                viewMenuBtn.classList.add('hidden');
+            }
+
+            const tabsContainer = document.getElementById('dateTabsContainer');
+            tabsContainer.innerHTML = '';
+            for (const [dateId, dateObj] of Object.entries(appState.dates)) {
+                const isActive = dateId === appState.currentDateId;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = isActive 
+                    ? "px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-semibold text-sm shadow-sm transition flex items-center gap-1.5 flex-shrink-0"
+                    : "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition flex items-center gap-1.5 flex-shrink-0 cursor-pointer";
+                btn.innerHTML = `
+                    <i class="fa-regular fa-calendar text-xs ${isActive ? 'text-blue-100' : 'text-slate-400'}"></i>
+                    <span>${escapeHtml(dateObj.name)}</span>
+                `;
+                btn.addEventListener('click', () => switchDate(dateId));
+                tabsContainer.appendChild(btn);
+            }
+
+            const selectEl = document.getElementById('inputDish');
+            selectEl.innerHTML = '';
+            (activeData.menu || []).forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.textContent = `${item.name} ($${item.price})`;
+                selectEl.appendChild(opt);
+            });
+
+            const tbody = document.getElementById('ordersTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            const orders = activeData.orders || [];
+            if (orders.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                orders.forEach((order, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0";
+                    
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 text-center font-medium text-slate-500">${index + 1}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(order.name)}</td>
+                        <td class="py-3 px-4 text-slate-700">${escapeHtml(order.dish)}</td>
+                        <td class="py-3 px-4 text-right font-medium text-slate-700">$${order.price}</td>
+                        <td class="py-3 px-4 text-left text-slate-500 max-w-[180px]">${escapeHtml(order.note || '')}</td>
+                        <td class="py-3 px-4 text-center">
+                            <input type="checkbox" ${order.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="editOrder(${index})" class="p-1.5 text-slate-400 hover:text-blue-600 transition" title="編輯">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button onclick="deleteOrder(${index})" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="刪除">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            renderSummary();
+        };
+
+        window.switchDate = function(dateId) {
+            if (!appState.dates || !appState.dates[dateId]) return;
+            appState.currentDateId = dateId;
+            try { localStorage.setItem(LOCAL_SELECTED_DATE_KEY, dateId); } catch (e) {}
+            // 日期頁籤是每台裝置自己的瀏覽位置，不同步到 Google Sheet，避免 5 秒輪詢把畫面跳回最新日期。
+            renderApp();
+        };
+
+        window.openMenuLightbox = function() {
+            const activeData = getActiveDateObj();
+            if (activeData.menuUrl) {
+                window.open(activeData.menuUrl, '_blank', 'noopener,noreferrer');
+            } else if (activeData.menuImageUrl) {
+                openLightbox(activeData.menuImageUrl);
+            }
+        };
+
+        window.openEditCurrentDateModal = function() {
+            const activeData = getActiveDateObj();
+            document.getElementById('inputEditDateName').value = activeData.name || '';
+            document.getElementById('inputEditDateRestaurant').value = activeData.restaurant || '';
+            document.getElementById('inputEditDateCollector').value = activeData.collector || '';
+            document.getElementById('inputEditDateDeadline').value = activeData.deadline || '';
+            document.getElementById('editCurrentDateModal').classList.remove('hidden');
+        };
+
+        window.closeEditCurrentDateModal = function() {
+            document.getElementById('editCurrentDateModal').classList.add('hidden');
+        };
+
+        window.handleEditCurrentDateSubmit = function(event) {
+            event.preventDefault();
+            const activeData = getActiveDateObj();
+            activeData.name = document.getElementById('inputEditDateName').value.trim() || activeData.name;
+            activeData.restaurant = document.getElementById('inputEditDateRestaurant').value.trim() || activeData.restaurant;
+            activeData.collector = document.getElementById('inputEditDateCollector').value.trim() || activeData.collector;
+            activeData.deadline = document.getElementById('inputEditDateDeadline').value.trim() || activeData.deadline;
+
+            closeEditCurrentDateModal();
+            saveLocalState();
+            syncStateToFirestore();
+            renderApp();
+            showToast("當日訂餐資訊已更新！");
+        };
+
+        window.openEditMenuModal = function() {
+            const activeData = getActiveDateObj();
+            document.getElementById('menuUrlInput').value = activeData.menuUrl || '';
+            document.getElementById('menuImageUrl').value = activeData.menuImageUrl || '';
+            if (activeData.menuImageUrl) {
+                document.getElementById('menuImagePreview').src = activeData.menuImageUrl;
+                document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
+            } else {
+                document.getElementById('menuImagePreviewContainer').classList.add('hidden');
+                document.getElementById('menuImageFile').value = '';
+            }
+
+            let menuText = '';
+            (activeData.menu || []).forEach(m => {
+                menuText += `${m.name},${m.price}\n`;
+            });
+            document.getElementById('menuItemsTextarea').value = menuText.trim();
+            document.getElementById('editMenuModal').classList.remove('hidden');
+        };
+
+        window.closeEditMenuModal = function() {
+            document.getElementById('editMenuModal').classList.add('hidden');
+        };
+
+        window.handleMenuImageUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('請選擇圖片檔案');
+                event.target.value = '';
+                return;
+            }
+
+            // 圖片先在瀏覽器縮小與壓縮，避免原始照片太大造成 Google Sheet 同步失敗。
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const maxSide = 1200;
+                    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(img.width * scale));
+                    canvas.height = Math.max(1, Math.round(img.height * scale));
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.72);
+                    document.getElementById('menuImageUrl').value = compressed;
+                    document.getElementById('menuImagePreview').src = compressed;
+                    document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
+                    showToast('菜單圖片已上傳');
+                };
+                img.onerror = function() {
+                    showToast('圖片讀取失敗，請重新選擇');
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                showToast('圖片讀取失敗，請重新選擇');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.handleEditMenuSubmit = function(event) {
+            event.preventDefault();
+            const activeData = getActiveDateObj();
+            const menuUrl = document.getElementById('menuUrlInput').value.trim();
+            const menuImageUrl = document.getElementById('menuImageUrl').value;
+            const rawText = document.getElementById('menuItemsTextarea').value;
+
+            const newMenu = [];
+            const lines = rawText.split('\n');
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    const price = Number(parts[1].trim()) || 80;
+                    if (name) {
+                        newMenu.push({ name, price });
+                    }
+                }
+            });
+
+            if (newMenu.length > 0) {
+                activeData.menu = newMenu;
+            }
+            activeData.menuUrl = menuUrl;
+            activeData.menuImageUrl = menuImageUrl;
+            const master = findOrCreateMenuMaster(activeData);
+            if (master) {
+                master.restaurant = activeData.restaurant || master.restaurant;
+                master.name = master.restaurant;
+                master.menuUrl = activeData.menuUrl || master.menuUrl || '';
+                master.menu = JSON.parse(JSON.stringify(activeData.menu || []));
+                activeData.menuSourceId = master.id;
+            }
+
+            closeEditMenuModal();
+            saveLocalState();
+            syncStateToFirestore();
+            renderApp();
+            showToast("菜單與店家圖片已更新！");
+        };
+
+        window.openNewDateModal = function() {
+            const modal = document.getElementById('newDateModal');
+            if (!modal) return;
+
+            // 先打開視窗，再準備菜單資料；即使歷史菜單資料有問題，新增日期視窗仍然可以正常開啟。
+            document.getElementById('inputNewDateName').value = '';
+            document.getElementById('inputNewDateRestaurant').value = "福隆便當 02-8982-0267";
+            document.getElementById('inputNewDateCollector').value = "育靜";
+            document.getElementById('inputNewDateDeadline').value = '';
+            modal.classList.remove('hidden');
+
+            try {
+                if (typeof window.populateMenuTemplates === 'function') {
+                    window.populateMenuTemplates();
+                }
+            } catch (err) {
+                console.error('載入歷史菜單失敗:', err);
+                const select = document.getElementById('menuTemplateSelect');
+                const preview = document.getElementById('menuTemplatePreview');
+                if (select) select.innerHTML = '<option value="">使用目前日期菜單</option>';
+                if (preview) preview.classList.add('hidden');
+            }
+        };
+
+        window.closeNewDateModal = function() {
+            document.getElementById('newDateModal').classList.add('hidden');
+        };
+
+        function getMenuHistory() {
+            if (!Array.isArray(appState.menuHistory)) appState.menuHistory = [];
+            return appState.menuHistory;
+        }
+
+        function menuToText(menu) {
+            return (menu || []).map(m => `${m.name},${m.price}`).join('\n');
+        }
+
+        function findOrCreateMenuMaster(dateObj) {
+            const history = getMenuHistory();
+            const menu = Array.isArray(dateObj.menu) ? dateObj.menu : [];
+            if (!menu.length) return null;
+            if (dateObj.menuSourceId) {
+                const linked = history.find(h => h.id === dateObj.menuSourceId);
+                if (linked) return linked;
+            }
+            const restaurant = dateObj.restaurant || '';
+            let existing = history.find(h => (h.restaurant || '') === restaurant && JSON.stringify(h.menu || []) === JSON.stringify(menu));
+            if (!existing) {
+                existing = {
+                    id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    name: restaurant || '歷史菜單',
+                    restaurant,
+                    menuUrl: dateObj.menuUrl || '',
+                    menuImageUrl: dateObj.menuImageUrl || '',
+                    menu: JSON.parse(JSON.stringify(menu)),
+                    lastUsed: dateObj.name || ''
+                };
+                history.push(existing);
+            }
+            dateObj.menuSourceId = existing.id;
+            return existing;
+        }
+
+        function migrateMenuMasters() {
+            Object.values(appState.dates || {}).forEach(d => findOrCreateMenuMaster(d));
+        }
+
+        // 將日期使用的菜單加入菜單主檔；若已經有相同主檔則只更新使用時間。
+        // 這個函式要容錯，避免菜單主檔發生問題時影響「新增日期」儲存。
+        function rememberMenuHistory(dateObj) {
+            if (!dateObj || !Array.isArray(dateObj.menu) || !dateObj.menu.length) return null;
+            const history = getMenuHistory();
+            let master = null;
+
+            if (dateObj.menuSourceId) {
+                master = history.find(h => h.id === dateObj.menuSourceId) || null;
+            }
+
+            if (!master) {
+                const restaurant = dateObj.restaurant || '';
+                master = history.find(h => (h.restaurant || '') === restaurant);
+            }
+
+            if (!master) {
+                master = {
+                    id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    name: dateObj.restaurant || '歷史菜單',
+                    restaurant: dateObj.restaurant || '',
+                    menuUrl: dateObj.menuUrl || '',
+                    menuImageUrl: dateObj.menuImageUrl || '',
+                    menu: JSON.parse(JSON.stringify(dateObj.menu)),
+                    lastUsed: dateObj.name || ''
+                };
+                history.push(master);
+            }
+
+            dateObj.menuSourceId = master.id;
+            master.lastUsed = dateObj.name || master.lastUsed || '';
+            return master;
+        }
+
+        window.populateMenuTemplates = function() {
+            migrateMenuMasters();
+            const select = document.getElementById('menuTemplateSelect');
+            const preview = document.getElementById('menuTemplatePreview');
+            if (!select) return;
+            const history = getMenuHistory();
+            select.innerHTML = '<option value="">＋ 建立新菜單</option>';
+            history.slice().reverse().forEach(h => {
+                const option = document.createElement('option');
+                option.value = h.id;
+                option.textContent = `${h.restaurant || h.name || '歷史菜單'}${h.menu && h.menu.length ? `（${h.menu.length} 項）` : ''}`;
+                select.appendChild(option);
+            });
+            if (history.length) {
+                select.value = history[history.length - 1].id;
+                applyMenuTemplate(select.value);
+            } else {
+                preview.classList.add('hidden');
+            }
+        };
+
+        window.applyMenuTemplate = function(historyId) {
+            const preview = document.getElementById('menuTemplatePreview');
+            if (!historyId) { preview.classList.add('hidden'); return; }
+            const template = getMenuHistory().find(h => h.id === historyId);
+            if (!template) return;
+            document.getElementById('inputNewDateRestaurant').value = template.restaurant || '';
+            preview.classList.remove('hidden');
+            preview.innerHTML = `<strong>${escapeHtml(template.restaurant || template.name || '歷史菜單')}</strong><br>${(template.menu || []).map(m => `${escapeHtml(m.name)} $${m.price}`).join('　')}`;
+        };
+
+        window.openMenuLibraryModal = function() {
+            migrateMenuMasters();
+            renderMenuLibrary();
+            document.getElementById('menuLibraryModal').classList.remove('hidden');
+            saveLocalState();
+        };
+
+        window.closeMenuLibraryModal = function() {
+            document.getElementById('menuLibraryModal').classList.add('hidden');
+        };
+
+        function renderMenuLibrary() {
+            const list = document.getElementById('menuLibraryList');
+            const history = getMenuHistory();
+            if (!history.length) {
+                list.innerHTML = '<div class="py-10 text-center text-slate-400 text-sm">目前還沒有菜單主檔。你可以從目前日期的菜單建立第一份。</div>';
+                return;
+            }
+            list.innerHTML = history.slice().reverse().map(h => {
+                const usedCount = Object.values(appState.dates || {}).filter(d => d.menuSourceId === h.id).length;
+                return `<div class="border border-slate-200 rounded-2xl p-4 hover:border-blue-200 transition">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="font-bold text-slate-800">${escapeHtml(h.restaurant || h.name || '未命名菜單')}</div>
+                            <div class="text-xs text-slate-400 mt-1">${h.menu.length} 個品項 · ${usedCount} 個日期使用中</div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button onclick="editMenuMaster('${h.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold"><i class="fa-solid fa-pen mr-1"></i>編輯菜單</button>
+                            <button onclick="deleteMenuMaster('${h.id}')" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold"><i class="fa-solid fa-trash mr-1"></i>刪除</button>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">${(h.menu || []).map(m => `<span class="px-2.5 py-1 rounded-lg bg-slate-50 text-xs text-slate-600">${escapeHtml(m.name)} <strong>$${m.price}</strong></span>`).join('')}</div>
+                </div>`;
+            }).join('');
+        }
+
+        window.deleteMenuMaster = function(id) {
+            const history = getMenuHistory();
+            const index = history.findIndex(h => h.id === id);
+            if (index < 0) return;
+
+            const master = history[index];
+            const usedDates = Object.values(appState.dates || {}).filter(d => d.menuSourceId === id);
+            const usedCount = usedDates.length;
+
+            let message = `確定要刪除「${master.restaurant || master.name || '這份菜單'}」嗎？`;
+            if (usedCount > 0) {
+                message += `\n\n目前有 ${usedCount} 個日期使用這份菜單。\n刪除後，這些日期的既有菜單與訂單不會被刪除，只會解除「菜單主檔」連結。`;
+            }
+            if (!confirm(message)) return;
+
+            history.splice(index, 1);
+            usedDates.forEach(d => {
+                d.menuSourceId = '';
+            });
+
+            saveLocalState();
+            syncStateToFirestore();
+            renderMenuLibrary();
+            renderApp();
+            showToast('菜單主檔已刪除，既有日期資料保留。');
+        };
+
+        window.openNewMenuMasterModal = function() {
+            // 從「全部菜單」建立新菜單時，先關閉清單，再開啟編輯視窗，避免兩個 Modal 疊在一起造成按鈕看似沒反應。
+            const libraryModal = document.getElementById('menuLibraryModal');
+            const masterModal = document.getElementById('menuMasterEditModal');
+            if (libraryModal) libraryModal.classList.add('hidden');
+
+            document.getElementById('menuMasterModalTitle').innerText = '建立新菜單';
+            document.getElementById('menuMasterId').value = '';
+            document.getElementById('menuMasterRestaurant').value = '';
+            document.getElementById('menuMasterUrl').value = '';
+            document.getElementById('menuMasterItems').value = '';
+            document.getElementById('menuMasterSyncDates').checked = false;
+            masterModal.classList.remove('hidden');
+            document.getElementById('menuMasterRestaurant').focus();
+        };
+
+        window.editMenuMaster = function(id) {
+            const h = getMenuHistory().find(x => x.id === id);
+            if (!h) return;
+            document.getElementById('menuMasterModalTitle').innerText = '編輯菜單主檔';
+            document.getElementById('menuMasterId').value = h.id;
+            document.getElementById('menuMasterRestaurant').value = h.restaurant || h.name || '';
+            document.getElementById('menuMasterUrl').value = h.menuUrl || '';
+            document.getElementById('menuMasterItems').value = menuToText(h.menu);
+            document.getElementById('menuMasterSyncDates').checked = true;
+            document.getElementById('menuMasterEditModal').classList.remove('hidden');
+        };
+
+        window.closeMenuMasterModal = function() {
+            document.getElementById('menuMasterEditModal').classList.add('hidden');
+        };
+
+        window.handleMenuMasterSubmit = function(event) {
+            event.preventDefault();
+            const history = getMenuHistory();
+            const id = document.getElementById('menuMasterId').value;
+            const restaurant = document.getElementById('menuMasterRestaurant').value.trim();
+            const menuUrl = document.getElementById('menuMasterUrl').value.trim();
+            const syncDates = document.getElementById('menuMasterSyncDates').checked;
+            const newMenu = [];
+            document.getElementById('menuMasterItems').value.split('\n').forEach(line => {
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    const price = Number(parts[1].trim());
+                    if (name && Number.isFinite(price)) newMenu.push({name, price});
+                }
+            });
+            if (!restaurant || !newMenu.length) { showToast('請填寫餐廳與至少一個菜單品項'); return; }
+
+            let master = id ? history.find(h => h.id === id) : null;
+            if (!master) {
+                master = { id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name: restaurant, restaurant: '', menu: [] };
+                history.push(master);
+            }
+            master.name = restaurant;
+            master.restaurant = restaurant;
+            master.menuUrl = menuUrl;
+            master.menu = JSON.parse(JSON.stringify(newMenu));
+            master.lastUsed = new Date().toLocaleDateString('zh-TW');
+
+            if (syncDates) {
+                Object.values(appState.dates || {}).forEach(d => {
+                    if (d.menuSourceId === master.id) {
+                        d.restaurant = restaurant;
+                        d.menuUrl = menuUrl;
+                        d.menu = JSON.parse(JSON.stringify(newMenu));
+                    }
+                });
+            }
+
+            closeMenuMasterModal();
+            saveLocalState();
+            syncStateToFirestore();
+            renderMenuLibrary();
+            renderApp();
+            showToast(syncDates ? '菜單已更新，相關日期已同步！' : '菜單主檔已更新！');
+        };
+
+        window.handleNewDateSubmit = function(event) {
+            event.preventDefault();
+            const dateName = document.getElementById('inputNewDateName').value.trim();
+            const restaurant = document.getElementById('inputNewDateRestaurant').value.trim() || "福隆便當 02-8982-0267";
+            const collector = document.getElementById('inputNewDateCollector').value.trim() || "育靜";
+            const deadline = document.getElementById('inputNewDateDeadline').value.trim() || `${dateName} 結單`;
+            if (!dateName) return;
+
+            const dateId = 'date_' + Date.now();
+            const activeData = getActiveDateObj();
+            const templateSelect = document.getElementById('menuTemplateSelect');
+            const templateId = templateSelect ? templateSelect.value : '';
+            const template = templateId ? getMenuHistory().find(h => h.id === templateId) : null;
+            const inheritedMenu = template
+                ? JSON.parse(JSON.stringify(template.menu || []))
+                : JSON.parse(JSON.stringify(activeData.menu || []));
+            const inheritedTitle = "良興電商 午餐食刻！";
+
+            appState.dates[dateId] = {
+                name: dateName,
+                deadline: deadline,
+                restaurant: template && template.restaurant ? template.restaurant : restaurant,
+                collector: collector,
+                title: inheritedTitle,
+                menuUrl: template ? (template.menuUrl || "") : "",
+                menuImageUrl: "",
+                menuSourceId: template ? template.id : "",
+                menu: inheritedMenu,
+                orders: []
+            };
+            rememberMenuHistory(appState.dates[dateId]);
+
+            appState.currentDateId = dateId;
+            try { localStorage.setItem(LOCAL_SELECTED_DATE_KEY, dateId); } catch (e) {}
+            closeNewDateModal();
+            saveLocalState();
+            syncStateToFirestore();
+            renderApp();
+            showToast(`已建立新日期頁籤：${dateName}`);
+        };
+
+        window.openAddModal = function() {
+            document.getElementById('modalTitle').innerText = '新增訂單';
+            document.getElementById('editIndex').value = '';
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputNote').value = '';
+            document.getElementById('inputPaid').checked = false;
+            updatePriceFromDish();
+            document.getElementById('orderModal').classList.remove('hidden');
+        };
+
+        window.editOrder = function(index) {
+            const activeData = getActiveDateObj();
+            const order = activeData.orders[index];
+            document.getElementById('modalTitle').innerText = '編輯訂單';
+            document.getElementById('editIndex').value = index;
+            document.getElementById('inputName').value = order.name;
+            document.getElementById('inputNote').value = order.note || '';
+            document.getElementById('inputDish').value = order.dish;
+            // 編輯訂單時，價格一律以「目前這一天的菜單主檔」為準，避免菜單已更新但仍顯示舊價格。
+            updatePriceFromDish();
+            // 若舊訂單的品項已不存在於目前菜單，才保留原本歷史價格。
+            const currentDish = (activeData.menu || []).find(m => m.name === order.dish);
+            if (!currentDish) {
+                document.getElementById('inputPrice').value = order.price;
+            }
+            document.getElementById('inputPaid').checked = order.paid;
+
+            document.getElementById('orderModal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('orderModal').classList.add('hidden');
+        };
+
+        window.openLightbox = function(url) {
+            document.getElementById('lightboxImage').src = url;
+            document.getElementById('lightboxModal').classList.remove('hidden');
+        };
+
+        window.closeLightbox = function() {
+            document.getElementById('lightboxModal').classList.add('hidden');
+        };
+
+        window.updatePriceFromDish = function() {
+            const activeData = getActiveDateObj();
+            const dishName = document.getElementById('inputDish').value;
+            const found = (activeData.menu || []).find(m => m.name === dishName);
+            if (found) {
+                document.getElementById('inputPrice').value = found.price;
+            }
+        };
+
+        window.handleFormSubmit = function(event) {
+            event.preventDefault();
+            const activeData = getActiveDateObj();
+            const editIndex = document.getElementById('editIndex').value;
+            const name = document.getElementById('inputName').value.trim();
+            const dish = document.getElementById('inputDish').value;
+            const price = Number(document.getElementById('inputPrice').value) || 0;
+            const paid = document.getElementById('inputPaid').checked;
+            const note = document.getElementById('inputNote').value.trim();
+
+            if (!name) return;
+
+            const newOrder = { name, dish, price, note, paid };
+
+            if (!activeData.orders) activeData.orders = [];
+
+            if (editIndex === "") {
+                activeData.orders.push(newOrder);
+                showToast("成功新增訂單！");
+            } else {
+                activeData.orders[editIndex] = newOrder;
+                showToast("訂單已更新！");
+            }
+
+            closeModal();
+            saveLocalState();
+            syncStateToFirestore();
+            renderApp();
+        };
+
+        window.deleteCurrentDate = function() {
+            const dateIds = Object.keys(appState.dates || {});
+            const currentId = appState.currentDateId;
+            const currentData = getActiveDateObj();
+
+            if (dateIds.length <= 1) {
+                showToast("至少要保留一個訂餐日期，無法刪除！");
+                return;
+            }
+
+            if (!confirm(`確定要刪除「${currentData.name || '本日'}」嗎？\n\n這一天的訂單、菜單與設定都會一起刪除。`)) {
+                return;
+            }
+
+            delete appState.dates[currentId];
+            const remainingIds = Object.keys(appState.dates);
+            appState.currentDateId = remainingIds[remainingIds.length - 1];
+
+            saveLocalState();
+            syncStateToFirestore();
+            renderApp();
+            showToast("已刪除當日訂餐資料");
+        };
+
+        window.deleteOrder = function(index) {
+            const activeData = getActiveDateObj();
+            activeData.orders.splice(index, 1);
+            saveLocalState();
+            syncStateToFirestore();
+            renderApp();
+            showToast("已刪除該筆訂單");
+        };
+
+        window.togglePaid = function(index) {
+            const activeData = getActiveDateObj();
+            activeData.orders[index].paid = !activeData.orders[index].paid;
+            saveLocalState();
+            syncStateToFirestore();
+            renderSummary();
+        };
+
+        function renderSummary() {
+            const activeData = getActiveDateObj();
+            const orders = activeData.orders || [];
+            
+            let grandTotal = 0;
+            orders.forEach(o => {
+                grandTotal += Number(o.price) || 0;
+            });
+
+            document.getElementById('grandTotalAmt').innerText = `$${grandTotal}`;
+            document.getElementById('totalCount').innerText = orders.length;
+
+            const counts = {};
+            const prices = {};
+            (activeData.menu || []).forEach(m => {
+                counts[m.name] = 0;
+                prices[m.name] = m.price;
+            });
+
+            orders.forEach(o => {
+                if (counts[o.dish] !== undefined) {
+                    counts[o.dish]++;
+                } else {
+                    counts[o.dish] = (counts[o.dish] || 0) + 1;
+                    if (prices[o.dish] === undefined) {
+                        prices[o.dish] = o.price || 0;
+                    }
+                }
+            });
+
+            const breakdownBody = document.getElementById('breakdownTableBody');
+            breakdownBody.innerHTML = '';
+
+            let index = 1;
+            const allDishNames = [...new Set([...(activeData.menu || []).map(m => m.name), ...orders.map(o => o.dish)])];
+            
+            allDishNames.forEach(dishName => {
+                const qty = counts[dishName] || 0;
+                const price = prices[dishName] || 80;
+                const totalAmt = qty * price;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="py-2.5 text-center text-slate-500 font-medium">${index++}</td>
+                    <td class="py-2.5 text-slate-800">${escapeHtml(dishName)}</td>
+                    <td class="py-2.5 text-center text-slate-600">$${price}</td>
+                    <td class="py-2.5 text-center font-bold text-blue-600">${qty}</td>
+                    <td class="py-2.5 text-right font-semibold text-slate-700">$${totalAmt}</td>
+                `;
+                breakdownBody.appendChild(tr);
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.addEventListener("error", function(event) {
+            console.error("頁面 JavaScript 錯誤:", event.error || event.message);
+        });
+
+        window.onload = function() {
+            try {
+                loadLocalState();
+                try {
+                    if (!localStorage.getItem(LOCAL_SELECTED_DATE_KEY) && appState.currentDateId) {
+                        localStorage.setItem(LOCAL_SELECTED_DATE_KEY, appState.currentDateId);
+                    }
+                } catch (e) {}
+                renderApp();
+                initFirebase();
+            } catch (err) {
+                console.error("初始化失敗:", err);
+                showToast("頁面初始化失敗，請重新整理");
+            }
+        };
+    </script>
+</body>
+</html>
