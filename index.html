@@ -913,6 +913,40 @@
             Object.values(appState.dates || {}).forEach(d => findOrCreateMenuMaster(d));
         }
 
+        // 將日期使用的菜單加入菜單主檔；若已經有相同主檔則只更新使用時間。
+        // 這個函式要容錯，避免菜單主檔發生問題時影響「新增日期」儲存。
+        function rememberMenuHistory(dateObj) {
+            if (!dateObj || !Array.isArray(dateObj.menu) || !dateObj.menu.length) return null;
+            const history = getMenuHistory();
+            let master = null;
+
+            if (dateObj.menuSourceId) {
+                master = history.find(h => h.id === dateObj.menuSourceId) || null;
+            }
+
+            if (!master) {
+                const restaurant = dateObj.restaurant || '';
+                master = history.find(h => (h.restaurant || '') === restaurant);
+            }
+
+            if (!master) {
+                master = {
+                    id: 'menu_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    name: dateObj.restaurant || '歷史菜單',
+                    restaurant: dateObj.restaurant || '',
+                    menuUrl: dateObj.menuUrl || '',
+                    menuImageUrl: dateObj.menuImageUrl || '',
+                    menu: JSON.parse(JSON.stringify(dateObj.menu)),
+                    lastUsed: dateObj.name || ''
+                };
+                history.push(master);
+            }
+
+            dateObj.menuSourceId = master.id;
+            master.lastUsed = dateObj.name || master.lastUsed || '';
+            return master;
+        }
+
         window.populateMenuTemplates = function() {
             migrateMenuMasters();
             const select = document.getElementById('menuTemplateSelect');
