@@ -12,6 +12,174 @@
     <style>
         body { font-family: 'Noto Sans TC', 'Inter', sans-serif; }
     </style>
+
+        <style id="mobile-order-card-style">
+        /* 手機版訂單：由窄表格改成卡片，避免主餐被擠成直式 */
+        @media (max-width: 767px) {
+            .mobile-order-table-wrap {
+                overflow-x: visible !important;
+            }
+
+            .mobile-order-table {
+                display: block;
+                width: 100%;
+            }
+
+            .mobile-order-table thead {
+                display: none;
+            }
+
+            .mobile-order-table tbody {
+                display: block;
+                width: 100%;
+            }
+
+            .mobile-order-table tbody tr {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 0;
+                position: relative;
+                padding: 16px 14px 14px;
+                border-bottom: 1px solid #e5e7eb;
+                background: #fff;
+            }
+
+            .mobile-order-table tbody tr:last-child {
+                border-bottom: 0;
+            }
+
+            .mobile-order-table tbody td {
+                display: block;
+                width: auto !important;
+                min-width: 0 !important;
+                max-width: none !important;
+                padding: 0 !important;
+                border: 0 !important;
+                white-space: normal !important;
+                word-break: break-word;
+                overflow-wrap: anywhere;
+            }
+
+            /* 序號 */
+            .mobile-order-table tbody td.order-no {
+                grid-column: 1 / -1;
+                font-size: 12px;
+                color: #94a3b8;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+            /* 姓名 */
+            .mobile-order-table tbody td.order-name {
+                grid-column: 1;
+                font-size: 18px;
+                line-height: 1.35;
+                font-weight: 700;
+                color: #1e293b;
+                padding-right: 10px !important;
+            }
+
+            /* 主餐：完整橫向閱讀，不再被表格欄寬切成一字一行 */
+            .mobile-order-table tbody td.order-dish {
+                grid-column: 1 / -1;
+                margin-top: 8px;
+                font-size: 16px;
+                line-height: 1.55;
+                color: #334155;
+                padding-right: 8px !important;
+            }
+
+            .mobile-order-table tbody td.order-dish::before {
+                content: "主餐";
+                display: inline-block;
+                margin-right: 7px;
+                padding: 2px 7px;
+                border-radius: 6px;
+                background: #eff6ff;
+                color: #2563eb;
+                font-size: 11px;
+                font-weight: 700;
+                vertical-align: 2px;
+                white-space: nowrap;
+            }
+
+            /* 備註 */
+            .mobile-order-table tbody td.order-note {
+                grid-column: 1 / -1;
+                margin-top: 7px;
+                font-size: 14px;
+                line-height: 1.5;
+                color: #64748b;
+                padding-right: 8px !important;
+            }
+
+            .mobile-order-table tbody td.order-note::before {
+                content: "備註";
+                display: inline-block;
+                margin-right: 7px;
+                color: #94a3b8;
+                font-size: 11px;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            /* 價格 */
+            .mobile-order-table tbody td.order-price {
+                grid-column: 1;
+                margin-top: 10px;
+                font-size: 17px;
+                line-height: 1.4;
+                font-weight: 700;
+                color: #334155;
+                text-align: left !important;
+            }
+
+            /* 已付款＋編輯刪除 */
+            .mobile-order-table tbody td.order-actions {
+                grid-column: 2;
+                grid-row: 4;
+                margin-top: 8px;
+                min-height: 36px;
+                display: flex !important;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 5px;
+                position: static !important;
+            }
+
+            .mobile-order-table tbody td.order-actions .paid-check {
+                position: static !important;
+                transform: none !important;
+                width: 20px !important;
+                height: 20px !important;
+                margin-right: 5px;
+                flex: 0 0 auto;
+            }
+
+            .mobile-order-table tbody td.order-actions .order-edit-delete {
+                position: static !important;
+                transform: none !important;
+                display: flex;
+                align-items: center;
+                gap: 1px;
+                background: transparent !important;
+            }
+
+            .mobile-order-table tbody td.order-actions .order-edit-delete button {
+                padding: 6px !important;
+            }
+
+            .mobile-order-table tbody td.order-actions::before {
+                content: "已付款";
+                color: #64748b;
+                font-size: 11px;
+                font-weight: 600;
+                white-space: nowrap;
+                margin-right: 2px;
+            }
+        }
+        </style>
+
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
@@ -82,8 +250,8 @@
 
             <!-- Orders Table Container -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                <div class="overflow-x-auto mobile-order-table-wrap">
+                    <table class="w-full text-left border-collapse mobile-order-table">
                         <thead>
                             <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider font-semibold">
                                 <th class="py-3 px-4 text-center w-16">序號</th>
@@ -152,15 +320,16 @@
             </div>
 
             <!-- Quick Tips Box -->
-            <div class="bg-blue-50 border border-blue-200/60 rounded-2xl p-4 text-xs text-blue-800 leading-relaxed">
-                <div class="font-bold flex items-center gap-1.5 mb-1 text-blue-900">
+            <div class="bg-blue-50 border border-blue-200/60 rounded-2xl p-4 text-sm text-blue-800 leading-7">
+                <div class="font-bold flex items-center gap-1.5 mb-2 text-base text-blue-900">
                     <i class="fa-solid fa-circle-info text-blue-600"></i> 使用說明小貼士
                 </div>
-                <ul class="list-disc pl-4 space-y-1 text-blue-800/90">
-                    <li>點擊「新增訂單」可以填寫名字與選擇主餐。</li>
-                    <li>點擊右側「設定菜單/圖片」可以設定菜單網址，或另外上傳菜單圖片。</li>
-                    <li>勾選「已付款」可即時標記收錢狀態。</li>
-                </ul>
+                <div class="space-y-1.5 text-blue-800/90 font-medium">
+                    <div>① 僅可「新增訂單」，新增日期、編輯、刪除等功能請勿異動</div>
+                    <div>② 訂單若突然消失，請先按 F5 重新整理，避免重複下單</div>
+                    <div>③ 結單後請勿再新增訂單</div>
+                    <div>④ 準時付款，一起開心吃飯！</div>
+                </div>
             </div>
 
             <!-- Edit Current Date Button at Bottom Right -->
@@ -455,6 +624,9 @@
         let syncFrame = null;
         // 防止圖片上傳後，舊的 Google Sheet 資料回讀把剛上傳的圖片蓋掉。
         let pendingSyncVersion = 0;
+        // 圖片上傳序號：避免連續選圖時，較慢完成的舊圖片把新圖片蓋回去。
+        let menuImageUploadToken = 0;
+        let menuMasterImageUploadToken = 0;
         const LOCAL_STATE_KEY = "eclunchordering_state_v3";
         const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
 
@@ -626,7 +798,7 @@
 
             // 每次儲存都產生一個單調遞增版本。Apps Script 會原樣保存這個版本；
             // 讀回時如果發現遠端還是舊版本，就不允許舊資料蓋掉本機。
-            appState._syncVersion = Date.now();
+            appState._syncVersion = Math.max(Date.now(), Number(appState._syncVersion || 0) + 1);
             pendingSyncVersion = appState._syncVersion;
             isSaving = true;
             saveLocalState();
@@ -738,14 +910,14 @@
                     tr.className = "hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0";
                     
                     tr.innerHTML = `
-                        <td class="py-3 px-4 text-center font-medium text-slate-500">${index + 1}</td>
-                        <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(order.name)}</td>
-                        <td class="py-3 px-4 text-slate-700">${escapeHtml(order.dish)}</td>
-                        <td class="py-3 px-4 text-left text-slate-500 max-w-[180px]">${escapeHtml(order.note || '') || '<span class="text-slate-300">—</span>'}</td>
-                        <td class="py-3 px-4 text-right font-medium text-slate-700">$${order.price}</td>
-                        <td class="py-3 px-4 text-center relative w-40 min-w-[160px]">
-                            <input type="checkbox" ${order.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer" title="${order.paid ? '已付款' : '尚未付款'}">
-                            <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-white/90 rounded-md">
+                        <td class="py-3 px-4 text-center font-medium text-slate-500 order-no">${index + 1}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800 order-name">${escapeHtml(order.name)}</td>
+                        <td class="py-3 px-4 text-slate-700 order-dish">${escapeHtml(order.dish)}</td>
+                        <td class="py-3 px-4 text-left text-slate-500 max-w-[180px] order-note">${escapeHtml(order.note || '') || '<span class="text-slate-300">—</span>'}</td>
+                        <td class="py-3 px-4 text-right font-medium text-slate-700 order-price">$${order.price}</td>
+                        <td class="py-3 px-4 text-center relative w-40 min-w-[160px] order-actions">
+                            <input type="checkbox" ${order.paid ? 'checked' : ''} onchange="togglePaid(${index})" class="paid-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer" title="${order.paid ? '已付款' : '尚未付款'}">
+                            <div class="order-edit-delete absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-white/90 rounded-md">
                                 <button onclick="editOrder(${index})" class="p-1.5 text-slate-400 hover:text-blue-600 transition" title="編輯">
                                     <i class="fa-solid fa-pen text-xs"></i>
                                 </button>
@@ -876,6 +1048,8 @@
 
         window.handleMenuImageUpload = async function(event) {
             const file = event.target.files[0];
+            const uploadToken = ++menuImageUploadToken;
+            const fileInput = event.target;
             if (!file) return;
             if (!file.type.startsWith('image/')) {
                 showToast('請選擇圖片檔案');
@@ -884,10 +1058,14 @@
             }
             try {
                 const compressed = await compressImageForStorage(file);
+                // 如果使用者已經又選了另一張圖，忽略前一張較慢完成的結果。
+                if (uploadToken !== menuImageUploadToken) return;
                 document.getElementById('menuImageUrl').value = compressed;
                 document.getElementById('menuImagePreview').src = compressed;
                 document.getElementById('menuImagePreviewContainer').classList.remove('hidden');
                 showToast('菜單圖片已上傳');
+                // 清空 file input，之後即使重新選同一個檔案，也一定會觸發 onchange。
+                fileInput.value = '';
             } catch (err) {
                 console.error(err);
                 event.target.value = '';
@@ -925,7 +1103,8 @@
                 master.restaurant = activeData.restaurant || master.restaurant;
                 master.name = master.restaurant;
                 master.menuUrl = activeData.menuUrl || master.menuUrl || '';
-                master.menuImageUrl = activeData.menuImageUrl || master.menuImageUrl || '';
+                // 圖片是「覆蓋」操作：即使新值為空，也要以目前表單值為準。
+                master.menuImageUrl = activeData.menuImageUrl;
                 master.menu = JSON.parse(JSON.stringify(activeData.menu || []));
                 activeData.menuSourceId = master.id;
             }
@@ -1180,6 +1359,8 @@
 
         window.handleMenuMasterImageUpload = async function(event) {
             const file = event.target.files[0];
+            const uploadToken = ++menuMasterImageUploadToken;
+            const fileInput = event.target;
             if (!file) return;
             if (!file.type.startsWith('image/')) {
                 showToast('請選擇圖片檔案');
@@ -1188,10 +1369,14 @@
             }
             try {
                 const compressed = await compressImageForStorage(file);
+                // 如果使用者已經又選了另一張圖，忽略前一張較慢完成的結果。
+                if (uploadToken !== menuMasterImageUploadToken) return;
                 document.getElementById('menuMasterImageUrl').value = compressed;
                 document.getElementById('menuMasterImagePreview').src = compressed;
                 document.getElementById('menuMasterImagePreviewContainer').classList.remove('hidden');
                 showToast('菜單圖片已上傳');
+                // 清空 file input，之後即使重新選同一個檔案，也一定會觸發 onchange。
+                fileInput.value = '';
             } catch (err) {
                 console.error(err);
                 event.target.value = '';
