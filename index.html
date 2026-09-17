@@ -823,7 +823,7 @@
             // 若本機還有尚未被 Google Sheet 確認的版本，絕對不能用舊資料覆蓋本機。
             if (syncTimer) clearInterval(syncTimer);
             syncTimer = setInterval(() => {
-                if (!isSaving) loadStateFromSheet();
+                loadStateFromSheet();
             }, 3000);
         }
 
