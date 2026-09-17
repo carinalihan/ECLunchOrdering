@@ -650,6 +650,9 @@
         let syncFrame = null;
         // 防止圖片上傳後，舊的 Google Sheet 資料回讀把剛上傳的圖片蓋掉。
         let pendingSyncVersion = 0;
+        let pendingExpectedServerVersion = 0;
+        let lastServerState = null;
+        const CLIENT_ID_KEY = "eclunchordering_client_id_v1";
         // 圖片上傳序號：避免連續選圖時，較慢完成的舊圖片把新圖片蓋回去。
         let menuImageUploadToken = 0;
         let menuMasterImageUploadToken = 0;
@@ -705,9 +708,10 @@
                 if (saved && saved.dates && typeof saved.dates === "object") {
                     appState = normalizeState(saved);
                     restoreImageBackups(appState);
-                    // 若上一次儲存尚未被遠端確認，先保護本機版本，避免重新整理時被舊資料蓋掉。
-                    pendingSyncVersion = Number(appState._syncVersion || 0);
-                    isSaving = pendingSyncVersion > 0;
+                    // 本機資料先顯示；是否已同步由 server version 判斷，不再把 client syncVersion 當成 server 版本。
+                    pendingSyncVersion = 0;
+                    pendingExpectedServerVersion = 0;
+                    isSaving = false;
                     try {
                         const selected = localStorage.getItem(LOCAL_SELECTED_DATE_KEY);
                         if (selected && appState.dates[selected]) appState.currentDateId = selected;
@@ -718,6 +722,43 @@
                 console.warn("本機資料讀取失敗", err);
             }
             return false;
+        }
+
+        function getClientId() {
+            try {
+                let id = localStorage.getItem(CLIENT_ID_KEY);
+                if (!id) {
+                    id = 'client_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+                    localStorage.setItem(CLIENT_ID_KEY, id);
+                }
+                return id;
+            } catch (e) {
+                return 'client_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+            }
+        }
+
+        function cloneStateForSync(value) {
+            try { return JSON.parse(JSON.stringify(value)); } catch (e) { return null; }
+        }
+
+        function touchDateMeta(dateObj) {
+            if (!dateObj) return;
+            dateObj._updatedAt = Date.now();
+        }
+
+        function touchDateMenu(dateObj) {
+            if (!dateObj) return;
+            dateObj._menuUpdatedAt = Date.now();
+        }
+
+        function touchMenuMaster(master) {
+            if (!master) return;
+            master._updatedAt = Date.now();
+        }
+
+        function touchOrder(order) {
+            if (!order) return;
+            order._updatedAt = Date.now();
         }
 
         function normalizeState(state) {
@@ -731,6 +772,18 @@
                 if (state.dates[k].menuImageUrl === undefined) state.dates[k].menuImageUrl = "";
                 if (state.dates[k].menuSourceId === undefined) state.dates[k].menuSourceId = "";
                 if (!Array.isArray(state.dates[k].menu)) state.dates[k].menu = [];
+                if (!Array.isArray(state.dates[k].orders)) state.dates[k].orders = [];
+                if (!state.dates[k]._deletedOrderIds || typeof state.dates[k]._deletedOrderIds !== 'object') state.dates[k]._deletedOrderIds = {};
+                if (state.dates[k]._updatedAt === undefined) state.dates[k]._updatedAt = 0;
+                if (state.dates[k]._menuUpdatedAt === undefined) state.dates[k]._menuUpdatedAt = state.dates[k]._updatedAt || 0;
+                state.dates[k].orders.forEach((o, i) => {
+                    if (!o.id) o.id = 'order_legacy_' + k + '_' + i + '_' + String(o.name || '') + '_' + String(o.dish || '');
+                    if (o._updatedAt === undefined) o._updatedAt = 0;
+                });
+            });
+            state.menuHistory.forEach((h, i) => {
+                if (!h.id) h.id = 'menu_legacy_' + i + '_' + String(h.restaurant || h.name || '');
+                if (h._updatedAt === undefined) h._updatedAt = 0;
             });
 
             // 舊資料升級：把既有日期曾使用過的菜單自動建立成歷史菜單。
@@ -770,7 +823,7 @@
             // 若本機還有尚未被 Google Sheet 確認的版本，絕對不能用舊資料覆蓋本機。
             if (syncTimer) clearInterval(syncTimer);
             syncTimer = setInterval(() => {
-                if (!isSaving || pendingSyncVersion > 0) loadStateFromSheet();
+                if (!isSaving) loadStateFromSheet();
             }, 3000);
         }
 
@@ -805,11 +858,11 @@
 
                 window[callbackName] = function(data) {
                     if (data && data.ok && data.state) {
-                        const incomingVersion = Number(data.state._syncVersion || 0);
-                        // 只要遠端版本比本機正在等待確認的版本舊，就完全不採用。
-                        // 這就是修正「圖片出現一下又消失」的關鍵。
-                        if (pendingSyncVersion > 0 && incomingVersion < pendingSyncVersion) {
-                            console.warn("忽略舊的 Google Sheet 資料", incomingVersion, pendingSyncVersion);
+                        const incomingServerVersion = Number(data.state._serverVersion || 0);
+                        // 若本機剛送出資料，先等伺服器至少產生一個新版本。
+                        // 避免 GET 比 POST 更快回來時，把剛新增的菜單洗掉。
+                        if (pendingExpectedServerVersion > 0 && incomingServerVersion < pendingExpectedServerVersion) {
+                            console.warn("忽略尚未包含本次寫入的 Google Sheet 狀態", incomingServerVersion, pendingExpectedServerVersion);
                             renderApp();
                             finish();
                             return;
@@ -843,21 +896,23 @@
                             });
                         }
 
+                        lastServerState = cloneStateForSync(incoming);
                         appState = incoming;
                         if (selectedDateId && appState.dates && appState.dates[selectedDateId]) {
                             appState.currentDateId = selectedDateId;
                         }
                         saveLocalState();
-                        if (backupRestored && pendingSyncVersion === 0) {
+                        if (pendingExpectedServerVersion > 0 && incomingServerVersion >= pendingExpectedServerVersion) {
+                            pendingExpectedServerVersion = 0;
+                            pendingSyncVersion = 0;
+                            isSaving = false;
+                        }
+                        if (backupRestored && pendingExpectedServerVersion === 0) {
                             // 遠端曾經沒有圖片時，自動把本機備份重新送回共用資料。
                             // 只在「補回圖片」時觸發，不改其他資料。
                             requestAnimationFrame(() => syncStateToFirestore());
                         }
 
-                        if (pendingSyncVersion > 0 && incomingVersion >= pendingSyncVersion) {
-                            pendingSyncVersion = 0;
-                            isSaving = false;
-                        }
                     }
 
                     renderApp();
@@ -880,16 +935,21 @@
         }
 
         function syncStateToFirestore() {
-            // 函式名稱保留，實際改為透過隱藏 HTML form POST。
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
                 console.warn("尚未設定 Google Apps Script URL");
                 return;
             }
 
-            // 每次儲存都產生一個單調遞增版本。Apps Script 會原樣保存這個版本；
-            // 讀回時如果發現遠端還是舊版本，就不允許舊資料蓋掉本機。
+            const baseServerVersion = Number(
+                (lastServerState && lastServerState._serverVersion) ||
+                appState._serverVersion || 0
+            );
+            appState._clientId = getClientId();
+            appState._baseServerVersion = baseServerVersion;
             appState._syncVersion = Math.max(Date.now(), Number(appState._syncVersion || 0) + 1);
             pendingSyncVersion = appState._syncVersion;
+            // server 每接受一次寫入就 +1；即使中間有其他人寫入，也會大於這個基準。
+            pendingExpectedServerVersion = baseServerVersion + 1;
             isSaving = true;
             saveLocalState();
 
@@ -912,23 +972,22 @@
                 input.type = "hidden";
                 input.name = "state";
                 input.value = JSON.stringify(appState);
-
                 form.appendChild(input);
                 document.body.appendChild(form);
                 form.submit();
                 form.remove();
 
-                // 不再用固定秒數解除 isSaving；等下一次 GET 確認版本，避免舊資料覆蓋新圖片。
+                // 不用固定秒數當作「成功」；等下一次 GET 看到 server version 才解除保護。
                 setTimeout(() => {
-                    if (pendingSyncVersion === appState._syncVersion) {
-                        // 即使 Apps Script 回應較慢，也繼續保護本機資料；下一輪會再次確認。
-                        console.log("等待 Google Sheet 確認版本：", pendingSyncVersion);
+                    if (isSaving && pendingExpectedServerVersion > 0) {
+                        // 若 POST 網路延遲，暫時保持本機資料，不讓輪詢覆蓋。
+                        console.log("等待 Google Sheet 合併確認：", pendingExpectedServerVersion);
                     }
                 }, 1500);
-
             } catch (err) {
                 console.error("Google Sheet 同步寫入失敗:", err);
                 isSaving = false;
+                pendingExpectedServerVersion = 0;
                 showToast("同步失敗，請檢查 Google Apps Script");
             }
         }
@@ -1060,6 +1119,7 @@
             activeData.restaurant = document.getElementById('inputEditDateRestaurant').value.trim() || activeData.restaurant;
             activeData.collector = document.getElementById('inputEditDateCollector').value.trim() || activeData.collector;
             activeData.deadline = document.getElementById('inputEditDateDeadline').value.trim() || activeData.deadline;
+            touchDateMeta(activeData);
 
             closeEditCurrentDateModal();
             saveLocalState();
@@ -1191,6 +1251,7 @@
             }
             activeData.menuUrl = menuUrl;
             activeData.menuImageUrl = menuImageUrl;
+            touchDateMenu(activeData);
             if (menuImageUrl) saveLocalImageBackup(appState.currentDateId, menuImageUrl);
             const master = findOrCreateMenuMaster(activeData);
             if (master) {
@@ -1201,6 +1262,7 @@
                 master.menuImageUrl = activeData.menuImageUrl;
                 master.menu = JSON.parse(JSON.stringify(activeData.menu || []));
                 activeData.menuSourceId = master.id;
+                touchMenuMaster(master);
             }
 
             closeEditMenuModal();
@@ -1395,8 +1457,11 @@
             if (!confirm(message)) return;
 
             history.splice(index, 1);
+            if (!appState._deletedMenuIds || typeof appState._deletedMenuIds !== 'object') appState._deletedMenuIds = {};
+            appState._deletedMenuIds[id] = Date.now();
             usedDates.forEach(d => {
                 d.menuSourceId = '';
+                touchDateMenu(d);
             });
 
             saveLocalState();
@@ -1509,6 +1574,7 @@
             master.menuImageUrl = menuImageUrl;
             master.menu = JSON.parse(JSON.stringify(newMenu));
             master.lastUsed = new Date().toLocaleDateString('zh-TW');
+            touchMenuMaster(master);
 
             if (syncDates) {
                 Object.values(appState.dates || {}).forEach(d => {
@@ -1517,6 +1583,7 @@
                         d.menuUrl = menuUrl;
                         d.menuImageUrl = menuImageUrl;
                         d.menu = JSON.parse(JSON.stringify(newMenu));
+                        touchDateMenu(d);
                     }
                 });
             }
@@ -1557,7 +1624,10 @@
                 menuImageUrl: template ? (template.menuImageUrl || "") : "",
                 menuSourceId: template ? template.id : "",
                 menu: inheritedMenu,
-                orders: []
+                orders: [],
+                _updatedAt: Date.now(),
+                _menuUpdatedAt: Date.now(),
+                _deletedOrderIds: {}
             };
             rememberMenuHistory(appState.dates[dateId]);
 
@@ -1635,7 +1705,7 @@
 
             if (!name) return;
 
-            const newOrder = { name, dish, price, note, paid };
+            const newOrder = { id: 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name, dish, price, note, paid, _updatedAt: Date.now() };
 
             if (!activeData.orders) activeData.orders = [];
 
@@ -1643,7 +1713,9 @@
                 activeData.orders.push(newOrder);
                 showToast("成功新增訂單！");
             } else {
+                newOrder.id = activeData.orders[editIndex].id || newOrder.id;
                 activeData.orders[editIndex] = newOrder;
+                touchOrder(newOrder);
                 showToast("訂單已更新！");
             }
 
@@ -1669,6 +1741,8 @@
             }
 
             delete appState.dates[currentId];
+            if (!appState._deletedDates || typeof appState._deletedDates !== 'object') appState._deletedDates = {};
+            appState._deletedDates[currentId] = Date.now();
             const remainingIds = Object.keys(appState.dates);
             appState.currentDateId = remainingIds[remainingIds.length - 1];
 
@@ -1681,7 +1755,12 @@
 
         window.deleteOrder = function(index) {
             const activeData = getActiveDateObj();
+            const removed = activeData.orders[index];
             activeData.orders.splice(index, 1);
+            if (removed && removed.id) {
+                if (!activeData._deletedOrderIds || typeof activeData._deletedOrderIds !== 'object') activeData._deletedOrderIds = {};
+                activeData._deletedOrderIds[removed.id] = Date.now();
+            }
             saveLocalState();
             renderApp();
             // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
@@ -1692,6 +1771,7 @@
         window.togglePaid = function(index) {
             const activeData = getActiveDateObj();
             activeData.orders[index].paid = !activeData.orders[index].paid;
+            touchOrder(activeData.orders[index]);
             saveLocalState();
             renderSummary();
             requestAnimationFrame(() => syncStateToFirestore());
