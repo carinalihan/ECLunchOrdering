@@ -1153,40 +1153,58 @@
             document.getElementById('editMenuModal').classList.add('hidden');
         };
 
-        // 先在瀏覽器壓縮圖片；儲存時由 Apps Script 自動轉存到 Google Drive，Google Sheet 只保存圖片網址。
+        // 先在瀏覽器壓縮圖片；儲存時由 Apps Script 自動轉存到 Google Drive，
+        // Google Sheet 只保存圖片網址。
+        // 上傳限制以「原始檔案 100KB 以下」為準；壓縮後保留較高畫質，
+        // 不再用 44KB Base64 的過度限制，避免正常菜單圖片被判定為太大。
         async function compressImageForStorage(file) {
             return new Promise((resolve, reject) => {
+                if (file.size > 200 * 1024) {
+                    reject(new Error("原始圖片超過100KB"));
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onerror = () => reject(new Error("圖片讀取失敗"));
                 reader.onload = (e) => {
                     const img = new Image();
                     img.onerror = () => reject(new Error("圖片解析失敗"));
                     img.onload = () => {
-                        let maxSide = 900;
-                        let quality = 0.62;
+                        let maxSide = 1400;
+                        let quality = 0.78;
                         let compressed = '';
 
-                        for (let i = 0; i < 7; i++) {
+                        // Base64 會比二進位檔案大約 4/3，
+                        // 這裡把 Data URL 控制在約 130KB 內，給 POST 傳輸留安全空間。
+                        const maxDataUrlLength = 130000;
+
+                        for (let i = 0; i < 10; i++) {
                             const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
                             const canvas = document.createElement('canvas');
                             canvas.width = Math.max(1, Math.round(img.width * scale));
                             canvas.height = Math.max(1, Math.round(img.height * scale));
+
                             const ctx = canvas.getContext('2d', { alpha: false });
                             ctx.fillStyle = '#ffffff';
                             ctx.fillRect(0, 0, canvas.width, canvas.height);
                             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
                             compressed = canvas.toDataURL('image/jpeg', quality);
 
-                            // 留安全空間，避免接近 Google Sheet 儲存格上限。
-                            if (compressed.length <= 44000) break;
-                            if (quality > 0.40) quality -= 0.06;
-                            else maxSide -= 100;
+                            if (compressed.length <= maxDataUrlLength) break;
+
+                            if (quality > 0.48) {
+                                quality -= 0.05;
+                            } else {
+                                maxSide -= 120;
+                            }
                         }
 
-                        if (!compressed || compressed.length > 48000) {
-                            reject(new Error('圖片仍然太大'));
+                        if (!compressed || compressed.length > maxDataUrlLength) {
+                            reject(new Error('圖片壓縮後仍然過大'));
                             return;
                         }
+
                         resolve(compressed);
                     };
                     img.src = e.target.result;
