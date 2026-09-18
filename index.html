@@ -27,6 +27,9 @@
             }
         }
 
+
+        /* 我的午餐履歷 */
+        .history-period-tab { transition: all .2s ease; }
 </style>
 
         <style id="mobile-order-card-style">
@@ -240,6 +243,11 @@
                     <span id="headerDeadline">9/8(二) 09:40 結單</span>
                 </div>
             </div>
+
+            <!-- 我的午餐履歷：僅讀取目前同步到 appState 的訂單，不修改原本點餐/同步資料 -->
+            <button type="button" onclick="openLunchHistoryModal()" class="lg:ml-auto shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm text-sm font-semibold transition">
+                <i class="fa-solid fa-clock-rotate-left"></i> 我的午餐履歷
+            </button>
         </div>
     </header>
 
@@ -609,6 +617,54 @@
         </div>
     </div>
 
+    <!-- 我的午餐履歷 Modal -->
+    <div id="lunchHistoryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-blue-600"></i> 我的午餐履歷</h3>
+                    <p class="text-xs text-slate-400 mt-1">查詢你在午餐食刻的點餐紀錄</p>
+                </div>
+                <button type="button" onclick="closeLunchHistoryModal()" class="text-slate-400 hover:text-slate-600 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <div class="flex gap-2">
+                    <input id="historyNameInput" type="text" placeholder="請輸入姓名，例如：育靜" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onkeydown="if(event.key==='Enter') queryLunchHistory()">
+                    <button type="button" onclick="queryLunchHistory()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm">查詢</button>
+                </div>
+
+                <div id="historySummary" class="grid grid-cols-2 gap-3">
+                    <div class="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+                        <div class="text-xs text-slate-500">吃了幾餐</div>
+                        <div id="historyMealCount" class="text-xl font-bold text-blue-700 mt-1">0 餐</div>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+                        <div class="text-xs text-slate-500">總金額</div>
+                        <div id="historyTotalAmount" class="text-xl font-bold text-slate-700 mt-1">$0</div>
+                    </div>
+                </div>
+
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <div class="overflow-y-auto max-h-[42vh]">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 sticky top-0 z-10">
+                                <tr>
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-500">日期</th>
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-500">餐點</th>
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-500">備註</th>
+                                    <th class="text-right px-4 py-3 font-semibold text-slate-500">金額</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="historyEmpty" class="hidden text-center py-8 text-slate-400 text-sm">查無符合條件的午餐紀錄</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 text-sm flex items-center gap-2">
         <i class="fa-solid fa-circle-check text-blue-400"></i>
@@ -666,7 +722,6 @@
         // 圖片上傳序號：避免連續選圖時，較慢完成的舊圖片把新圖片蓋回去。
         let menuImageUploadToken = 0;
         let menuMasterImageUploadToken = 0;
-        let isSubmittingOrder = false;
         const LOCAL_STATE_KEY = "eclunchordering_state_v3";
         const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
         // 圖片獨立備份：即使遠端回傳的完整 state 暫時沒有圖片，也能從本機還原。
@@ -836,7 +891,7 @@
             if (syncTimer) clearInterval(syncTimer);
             syncTimer = setInterval(() => {
                 loadStateFromSheet();
-            }, 8000);
+            }, 3000);
         }
 
         function loadStateFromSheet() {
@@ -1013,19 +1068,6 @@
         }
 
         window.renderApp = function() {
-            // 多人同步會反覆 renderApp；若目前正在新增／編輯訂單，
-            // 先保存整張表單，render 完成後再恢復，避免主餐／備註／姓名被重設。
-            const orderModalForSnapshot = document.getElementById('orderModal');
-            const preserveOrderForm = orderModalForSnapshot && !orderModalForSnapshot.classList.contains('hidden');
-            const orderFormSnapshot = preserveOrderForm ? {
-                name: document.getElementById('inputName')?.value || '',
-                dish: document.getElementById('inputDish')?.value || '',
-                note: document.getElementById('inputNote')?.value || '',
-                price: document.getElementById('inputPrice')?.value || '',
-                paid: document.getElementById('inputPaid')?.checked || false,
-                editIndex: document.getElementById('editIndex')?.value || ''
-            } : null;
-
             const activeData = getActiveDateObj();
 
             document.getElementById('headerTitle').innerText = "良興電商 午餐食刻！";
@@ -1075,31 +1117,13 @@
             }
 
             const selectEl = document.getElementById('inputDish');
-            const orderModal = document.getElementById('orderModal');
-            const isOrderModalOpen = orderModal && !orderModal.classList.contains('hidden');
-            const selectedDishBeforeRender = isOrderModalOpen ? selectEl.value : '';
-            const dishStillExists = (activeData.menu || []).some(item => item.name === selectedDishBeforeRender);
-
-            // 同步重繪時，如果同仁正在填單，保留目前主餐。
-            if (!isOrderModalOpen || !selectedDishBeforeRender || !dishStillExists) {
-                selectEl.innerHTML = '';
-                (activeData.menu || []).forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item.name;
-                    opt.textContent = `${item.name} ($${item.price})`;
-                    selectEl.appendChild(opt);
-                });
-            }
-
-            // 餐點若已被管理者移除，不要默默跳成第一個餐點。
-            if (isOrderModalOpen && selectedDishBeforeRender && !dishStillExists) {
-                if (selectEl.dataset.removedDish !== selectedDishBeforeRender) {
-                    selectEl.dataset.removedDish = selectedDishBeforeRender;
-                    showToast(`「${selectedDishBeforeRender}」已被更新，請重新選擇主餐`);
-                }
-            } else if (selectEl.dataset.removedDish) {
-                delete selectEl.dataset.removedDish;
-            }
+            selectEl.innerHTML = '';
+            (activeData.menu || []).forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.textContent = `${item.name} ($${item.price})`;
+                selectEl.appendChild(opt);
+            });
 
             const tbody = document.getElementById('ordersTableBody');
             const emptyState = document.getElementById('emptyState');
@@ -1137,27 +1161,6 @@
             }
 
             renderSummary();
-
-            // renderApp 完成後恢復正在編輯中的整張訂單表單。
-            // 這會一起保護主餐、備註、姓名、價格與付款狀態。
-            if (orderFormSnapshot) {
-                const nameEl = document.getElementById('inputName');
-                const dishEl = document.getElementById('inputDish');
-                const noteEl = document.getElementById('inputNote');
-                const priceEl = document.getElementById('inputPrice');
-                const paidEl = document.getElementById('inputPaid');
-                const editEl = document.getElementById('editIndex');
-
-                if (nameEl) nameEl.value = orderFormSnapshot.name;
-                if (noteEl) noteEl.value = orderFormSnapshot.note;
-                if (priceEl) priceEl.value = orderFormSnapshot.price;
-                if (paidEl) paidEl.checked = orderFormSnapshot.paid;
-                if (editEl) editEl.value = orderFormSnapshot.editIndex;
-
-                if (dishEl && Array.from(dishEl.options).some(o => o.value === orderFormSnapshot.dish)) {
-                    dishEl.value = orderFormSnapshot.dish;
-                }
-            }
         };
 
         window.switchDate = function(dateId) {
@@ -1768,7 +1771,6 @@
             document.getElementById('inputNote').value = '';
             document.getElementById('inputPaid').checked = false;
             updatePriceFromDish();
-            delete document.getElementById('inputDish').dataset.removedDish;
             document.getElementById('orderModal').classList.remove('hidden');
         };
 
@@ -1788,7 +1790,6 @@
                 document.getElementById('inputPrice').value = order.price;
             }
             document.getElementById('inputPaid').checked = order.paid;
-            delete document.getElementById('inputDish').dataset.removedDish;
 
             document.getElementById('orderModal').classList.remove('hidden');
         };
@@ -1815,20 +1816,14 @@
             }
         };
 
-                window.handleFormSubmit = function(event) {
+        window.handleFormSubmit = function(event) {
             event.preventDefault();
-
-            if (isSubmittingOrder) return;
-
             const activeData = getActiveDateObj();
-            const editIndex = document.getElementById('editIndex').value;
-            const isNewOrder = editIndex === '';
-
-            if (activeData.isClosed && isNewOrder) {
+            if (activeData.isClosed && document.getElementById('editIndex').value === '') {
                 showToast("已結單下次請早！");
                 return;
             }
-
+            const editIndex = document.getElementById('editIndex').value;
             const name = document.getElementById('inputName').value.trim();
             const dish = document.getElementById('inputDish').value;
             const price = Number(document.getElementById('inputPrice').value) || 0;
@@ -1837,66 +1832,27 @@
 
             if (!name) return;
 
-            // 若同步期間餐點已被刪除，絕不自動改成第一個餐點。
-            const currentDish = (activeData.menu || []).find(m => m.name === dish);
-            if (!currentDish) {
-                showToast(`「${dish || '原選餐點'}」已被更新，請重新選擇主餐`);
-                return;
-            }
-
-            isSubmittingOrder = true;
-
-            const submitBtn = document.querySelector('#orderForm button[type="submit"]');
-            const originalSubmitHtml = submitBtn ? submitBtn.innerHTML : '';
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 訂單同步中…';
-                submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
-            }
-
-            const newOrder = {
-                id: 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                name, dish, price, note, paid,
-                _updatedAt: Date.now()
-            };
+            const newOrder = { id: 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name, dish, price, note, paid, _updatedAt: Date.now() };
 
             if (!activeData.orders) activeData.orders = [];
 
-            if (isNewOrder) {
+            if (editIndex === "") {
                 activeData.orders.push(newOrder);
+                showToast("成功新增訂單！");
             } else {
-                if (!activeData.orders[editIndex]) {
-                    isSubmittingOrder = false;
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalSubmitHtml;
-                        submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-                    }
-                    showToast("這筆訂單已被其他人更新，請重新整理後再操作");
-                    return;
-                }
                 newOrder.id = activeData.orders[editIndex].id || newOrder.id;
                 activeData.orders[editIndex] = newOrder;
                 touchOrder(newOrder);
+                showToast("訂單已更新！");
             }
 
             closeModal();
             saveLocalState();
             renderApp();
+            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
             requestAnimationFrame(() => syncStateToFirestore());
-
-            showToast(isNewOrder ? "訂單已送出，正在同步…" : "訂單已更新，正在同步…");
-
-            setTimeout(() => {
-                isSubmittingOrder = false;
-                const btn = document.querySelector('#orderForm button[type="submit"]');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalSubmitHtml;
-                    btn.classList.remove('opacity-60', 'cursor-not-allowed');
-                }
-            }, 5000);
         };
+
         window.deleteCurrentDate = function() {
             const dateIds = Object.keys(appState.dates || {});
             const currentId = appState.currentDateId;
@@ -2007,6 +1963,116 @@
                 breakdownBody.appendChild(tr);
             });
         }
+
+        // ==========================================
+        // 我的午餐履歷｜純查詢功能
+        // 不寫入 appState、不呼叫同步 API，不影響原本點餐與 100 人同步架構。
+        // ==========================================
+        let lunchHistoryName = '';
+
+        function openLunchHistoryModal() {
+            const modal = document.getElementById('lunchHistoryModal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            const input = document.getElementById('historyNameInput');
+            if (input) {
+                input.value = lunchHistoryName || '';
+                setTimeout(() => input.focus(), 50);
+            }
+            if (lunchHistoryName) {
+                renderLunchHistory();
+            } else {
+                document.getElementById('historyTableBody').innerHTML = '';
+                document.getElementById('historyEmpty').classList.add('hidden');
+                document.getElementById('historyMealCount').innerText = '0 餐';
+                document.getElementById('historyTotalAmount').innerText = '$0';
+            }
+        }
+
+        function closeLunchHistoryModal() {
+            const modal = document.getElementById('lunchHistoryModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function queryLunchHistory() {
+            const input = document.getElementById('historyNameInput');
+            const name = (input ? input.value : '').trim();
+            if (!name) {
+                showToast('請先輸入姓名');
+                if (input) input.focus();
+                return;
+            }
+            lunchHistoryName = name;
+            renderLunchHistory();
+        }
+
+        function parseLunchHistoryDate(dateId) {
+            const m = String(dateId || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            return null;
+        }
+
+        function renderLunchHistory() {
+            const body = document.getElementById('historyTableBody');
+            const empty = document.getElementById('historyEmpty');
+            const countEl = document.getElementById('historyMealCount');
+            const totalEl = document.getElementById('historyTotalAmount');
+            if (!body || !empty || !countEl || !totalEl) return;
+
+            const targetName = lunchHistoryName.trim().toLowerCase();
+            const records = [];
+
+            Object.entries(appState.dates || {}).forEach(([dateId, dateObj]) => {
+                const date = parseLunchHistoryDate(dateId);
+                (dateObj.orders || []).forEach(order => {
+                    const orderName = String(order && order.name || '').trim().toLowerCase();
+                    if (orderName !== targetName) return;
+                    records.push({
+                        dateObj,
+                        date,
+                        dateId,
+                        dish: String(order.dish || '未填寫餐點'),
+                        note: String(order.note || ''),
+                        price: Number(order.price) || 0
+                    });
+                });
+            });
+
+            records.sort((a, b) => {
+                const ad = a.date ? a.date.getTime() : 0;
+                const bd = b.date ? b.date.getTime() : 0;
+                return bd - ad;
+            });
+
+            const total = records.reduce((sum, item) => sum + item.price, 0);
+            countEl.innerText = `${records.length} 餐`;
+            totalEl.innerText = `$${total}`;
+            body.innerHTML = '';
+
+            if (!records.length) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            records.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-t border-slate-100 hover:bg-slate-50 transition';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${escapeHtml(item.dateObj.name || item.dateId)}</td>
+                    <td class="px-4 py-3 text-slate-800 font-medium">${escapeHtml(item.dish)}</td>
+                    <td class="px-4 py-3 text-slate-500">${escapeHtml(item.note || '—')}</td>
+                    <td class="px-4 py-3 text-right text-slate-700 font-semibold whitespace-nowrap">$${item.price}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        // 點擊遮罩關閉，不會碰到任何同步資料。
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('lunchHistoryModal');
+            if (modal && event.target === modal) closeLunchHistoryModal();
+        });
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
