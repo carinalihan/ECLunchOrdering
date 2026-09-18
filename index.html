@@ -666,6 +666,7 @@
         // 圖片上傳序號：避免連續選圖時，較慢完成的舊圖片把新圖片蓋回去。
         let menuImageUploadToken = 0;
         let menuMasterImageUploadToken = 0;
+        let isSubmittingOrder = false;
         const LOCAL_STATE_KEY = "eclunchordering_state_v3";
         const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
         // 圖片獨立備份：即使遠端回傳的完整 state 暫時沒有圖片，也能從本機還原。
@@ -835,7 +836,7 @@
             if (syncTimer) clearInterval(syncTimer);
             syncTimer = setInterval(() => {
                 loadStateFromSheet();
-            }, 3000);
+            }, 8000);
         }
 
         function loadStateFromSheet() {
@@ -1012,6 +1013,17 @@
         }
 
         window.renderApp = function() {
+            const orderModalForSnapshot = document.getElementById('orderModal');
+            const preserveOrderForm = orderModalForSnapshot && !orderModalForSnapshot.classList.contains('hidden');
+            const orderFormSnapshot = preserveOrderForm ? {
+                name: document.getElementById('inputName')?.value || '',
+                dish: document.getElementById('inputDish')?.value || '',
+                note: document.getElementById('inputNote')?.value || '',
+                price: document.getElementById('inputPrice')?.value || '',
+                paid: document.getElementById('inputPaid')?.checked || false,
+                editIndex: document.getElementById('editIndex')?.value || ''
+            } : null;
+
             const activeData = getActiveDateObj();
 
             document.getElementById('headerTitle').innerText = "良興電商 午餐食刻！";
@@ -1061,13 +1073,30 @@
             }
 
             const selectEl = document.getElementById('inputDish');
-            selectEl.innerHTML = '';
-            (activeData.menu || []).forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item.name;
-                opt.textContent = `${item.name} ($${item.price})`;
-                selectEl.appendChild(opt);
-            });
+            const orderModal = document.getElementById('orderModal');
+            const isOrderModalOpen = orderModal && !orderModal.classList.contains('hidden');
+            const selectedDishBeforeRender = isOrderModalOpen ? selectEl.value : '';
+            const dishStillExists = (activeData.menu || []).some(item => item.name === selectedDishBeforeRender);
+
+            // 多人同步時，如果同仁正在填單，保留目前選擇的主餐。
+            if (!isOrderModalOpen || !selectedDishBeforeRender || !dishStillExists) {
+                selectEl.innerHTML = '';
+                (activeData.menu || []).forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.name;
+                    opt.textContent = `${item.name} ($${item.price})`;
+                    selectEl.appendChild(opt);
+                });
+            }
+
+            if (isOrderModalOpen && selectedDishBeforeRender && !dishStillExists) {
+                if (selectEl.dataset.removedDish !== selectedDishBeforeRender) {
+                    selectEl.dataset.removedDish = selectedDishBeforeRender;
+                    showToast(`「${selectedDishBeforeRender}」已被更新，請重新選擇主餐`);
+                }
+            } else if (selectEl.dataset.removedDish) {
+                delete selectEl.dataset.removedDish;
+            }
 
             const tbody = document.getElementById('ordersTableBody');
             const emptyState = document.getElementById('emptyState');
@@ -1106,6 +1135,27 @@
 
             renderSummary();
         };
+            // 同步重繪完成後恢復整張正在編輯的訂單表單。
+            // 因此修改備註、姓名、付款狀態時，主餐不會被重設成第一個。
+            if (orderFormSnapshot) {
+                const nameEl = document.getElementById('inputName');
+                const dishEl = document.getElementById('inputDish');
+                const noteEl = document.getElementById('inputNote');
+                const priceEl = document.getElementById('inputPrice');
+                const paidEl = document.getElementById('inputPaid');
+                const editEl = document.getElementById('editIndex');
+
+                if (nameEl) nameEl.value = orderFormSnapshot.name;
+                if (noteEl) noteEl.value = orderFormSnapshot.note;
+                if (priceEl) priceEl.value = orderFormSnapshot.price;
+                if (paidEl) paidEl.checked = orderFormSnapshot.paid;
+                if (editEl) editEl.value = orderFormSnapshot.editIndex;
+
+                if (dishEl && Array.from(dishEl.options).some(o => o.value === orderFormSnapshot.dish)) {
+                    dishEl.value = orderFormSnapshot.dish;
+                }
+            }
+
 
         window.switchDate = function(dateId) {
             if (!appState.dates || !appState.dates[dateId]) return;
@@ -1760,14 +1810,19 @@
             }
         };
 
-        window.handleFormSubmit = function(event) {
+                window.handleFormSubmit = function(event) {
             event.preventDefault();
+            if (isSubmittingOrder) return;
+
             const activeData = getActiveDateObj();
-            if (activeData.isClosed && document.getElementById('editIndex').value === '') {
+            const editIndex = document.getElementById('editIndex').value;
+            const isNewOrder = editIndex === '';
+
+            if (activeData.isClosed && isNewOrder) {
                 showToast("已結單下次請早！");
                 return;
             }
-            const editIndex = document.getElementById('editIndex').value;
+
             const name = document.getElementById('inputName').value.trim();
             const dish = document.getElementById('inputDish').value;
             const price = Number(document.getElementById('inputPrice').value) || 0;
@@ -1776,27 +1831,62 @@
 
             if (!name) return;
 
-            const newOrder = { id: 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name, dish, price, note, paid, _updatedAt: Date.now() };
+            const currentDish = (activeData.menu || []).find(m => m.name === dish);
+            if (!currentDish) {
+                showToast(`「${dish || '原選餐點'}」已被更新，請重新選擇主餐`);
+                return;
+            }
+
+            isSubmittingOrder = true;
+            const submitBtn = document.querySelector('#orderForm button[type="submit"]');
+            const originalSubmitHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 訂單同步中…';
+                submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+            }
+
+            const newOrder = {
+                id: 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                name, dish, price, note, paid, _updatedAt: Date.now()
+            };
 
             if (!activeData.orders) activeData.orders = [];
 
-            if (editIndex === "") {
+            if (isNewOrder) {
                 activeData.orders.push(newOrder);
-                showToast("成功新增訂單！");
             } else {
+                if (!activeData.orders[editIndex]) {
+                    isSubmittingOrder = false;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalSubmitHtml;
+                        submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                    }
+                    showToast("這筆訂單已被其他人更新，請重新整理後再操作");
+                    return;
+                }
                 newOrder.id = activeData.orders[editIndex].id || newOrder.id;
                 activeData.orders[editIndex] = newOrder;
                 touchOrder(newOrder);
-                showToast("訂單已更新！");
             }
 
             closeModal();
             saveLocalState();
             renderApp();
-            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
             requestAnimationFrame(() => syncStateToFirestore());
-        };
+            showToast(isNewOrder ? "訂單已送出，正在同步…" : "訂單已更新，正在同步…");
 
+            setTimeout(() => {
+                isSubmittingOrder = false;
+                const btn = document.querySelector('#orderForm button[type="submit"]');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalSubmitHtml;
+                    btn.classList.remove('opacity-60', 'cursor-not-allowed');
+                }
+            }, 5000);
+        };
         window.deleteCurrentDate = function() {
             const dateIds = Object.keys(appState.dates || {});
             const currentId = appState.currentDateId;
