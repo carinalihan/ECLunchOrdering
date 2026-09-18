@@ -1360,7 +1360,7 @@
             // 修改結單時間「不等於」重新開放。
             // 已結單的日期，只有取消「已結單」並通過通關密語才會重新開放；
             // 單純修改結單時間，仍維持原本的結單狀態。
-            activeData.isClosed = oldClosed ? wantsClosed : false;
+            activeData.isClosed = wantsClosed;
             touchDateMeta(activeData);
 
             closeEditCurrentDateModal();
