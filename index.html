@@ -328,12 +328,34 @@
                 </div>
             </div>
 
+            <!-- 未付款提醒 -->
+            <div id="unpaidCard" class="bg-rose-50 border border-rose-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 text-rose-900 font-bold">
+                            <i class="fa-solid fa-circle-exclamation text-rose-500"></i> 未付款提醒
+                        </div>
+                        <div id="unpaidSummary" class="mt-2 text-sm text-rose-800 font-medium">目前全部已付款</div>
+                    </div>
+                    <button type="button" onclick="openUnpaidModal()" id="unpaidViewBtn" class="shrink-0 px-3 py-2 rounded-xl bg-white border border-rose-200 text-rose-700 hover:bg-rose-100 text-xs font-semibold transition">查看名單</button>
+                </div>
+                <div class="mt-3 flex items-center justify-between gap-2">
+                    <span id="unpaidAmount" class="text-xs text-rose-700">未付款 $0</span>
+                    <button type="button" onclick="copyUnpaidList()" id="unpaidCopyBtn" class="text-xs font-semibold text-rose-700 hover:text-rose-900">複製未付款名單</button>
+                </div>
+            </div>
+
             <!-- Dish Breakdown Table -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col">
                 <div class="flex items-center justify-between mb-4 border-b pb-3">
-                    <h3 class="font-bold text-slate-800 flex items-center">
-                        <i class="fa-solid fa-chart-pie text-blue-600 mr-2"></i>主餐統計數量
-                    </h3>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <h3 class="font-bold text-slate-800 flex items-center whitespace-nowrap">
+                            <i class="fa-solid fa-chart-pie text-blue-600 mr-2"></i>主餐統計數量
+                        </h3>
+                        <button type="button" onclick="copyOrderSummary()" class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-100 text-xs font-semibold transition whitespace-nowrap">
+                            <i class="fa-regular fa-copy mr-1"></i>複製統計
+                        </button>
+                    </div>
                     <button onclick="openEditMenuModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition font-medium">
                         <i class="fa-solid fa-gear mr-1"></i> 設定菜單/圖片
                     </button>
@@ -362,10 +384,9 @@
                     <i class="fa-solid fa-circle-info text-blue-600"></i> 使用說明小貼士
                 </div>
                 <div class="space-y-1.5 text-blue-800/90 font-medium">
-                    <div>① 僅可「新增訂單」，新增日期、編輯、刪除等功能非電商同仁請勿異動</div>
-                    <div>② 訂單若突然消失，請先按 F5 重新整理，避免重複下單</div>
-                    <div>③ 結單後請勿再新增訂單</div>
-                    <div>④ 準時付款，一起開心吃飯！</div>
+                    <div>① 僅可「新增訂單」，其他功能非電商同仁請勿異動</div>
+                    <div>② 訂單若突然消失，請先按 F5 重新確認，避免重複下單</div>
+                    <div>③ 準時付款，一起開心吃飯！</div>
                 </div>
             </div>
 
@@ -374,7 +395,7 @@
                 <button onclick="openEditCurrentDateModal()" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-blue-50 cursor-pointer">
                     <i class="fa-solid fa-pen-to-square"></i> 編輯當日內容
                 </button>
-                <button onclick="deleteCurrentDate()" class="text-rose-600 hover:text-rose-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-rose-50 cursor-pointer">
+                <button onclick="deleteCurrentDate()" class="text-red-600 hover:text-rose-800 text-xs font-medium transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-rose-50 cursor-pointer">
                     <i class="fa-solid fa-trash"></i> 刪除日期
                 </button>
                 <button onclick="openMenuLibraryModal()" class="text-emerald-600 hover:text-emerald-800 text-xs font-semibold transition flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-emerald-50 cursor-pointer">
@@ -619,6 +640,27 @@
             </form>
         </div>
     </div>
+
+    <!-- 未付款名單 Modal -->
+    <div id="unpaidModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85vh] overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-circle-exclamation text-rose-500"></i> 未付款名單</h3>
+                    <p id="unpaidModalSummary" class="text-xs text-slate-400 mt-1"></p>
+                </div>
+                <button type="button" onclick="closeUnpaidModal()" class="text-slate-400 hover:text-slate-600 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5">
+                <div id="unpaidList" class="space-y-2 max-h-[55vh] overflow-y-auto"></div>
+                <div class="flex gap-2 mt-4">
+                    <button type="button" onclick="copyUnpaidList()" class="flex-1 px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold">複製名單</button>
+                    <button type="button" onclick="closeUnpaidModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- 我的午餐履歷 Modal -->
     <div id="lunchHistoryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
@@ -1270,7 +1312,7 @@
                                 <button onclick="editOrder(${index})" class="p-1.5 text-slate-400 hover:text-blue-600 transition" title="編輯">
                                     <i class="fa-solid fa-pen text-xs"></i>
                                 </button>
-                                <button onclick="deleteOrder(${index})" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="刪除">
+                                <button onclick="deleteOrder(${index})" class="p-1.5 text-slate-400 hover:text-red-600 transition" title="刪除">
                                     <i class="fa-solid fa-trash text-xs"></i>
                                 </button>
                             </div>
@@ -1692,7 +1734,7 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <button onclick="editMenuMaster('${h.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold"><i class="fa-solid fa-pen mr-1"></i>編輯菜單</button>
-                            <button onclick="deleteMenuMaster('${h.id}')" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold"><i class="fa-solid fa-trash mr-1"></i>刪除</button>
+                            <button onclick="deleteMenuMaster('${h.id}')" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-red-600 text-xs font-semibold"><i class="fa-solid fa-trash mr-1"></i>刪除</button>
                         </div>
                     </div>
                     <div class="mt-3 flex flex-wrap gap-2">${(h.menu || []).map(m => `<span class="px-2.5 py-1 rounded-lg bg-slate-50 text-xs text-slate-600">${escapeHtml(m.name)} <strong>$${m.price}</strong></span>`).join('')}</div>
@@ -2105,6 +2147,95 @@
             requestAnimationFrame(() => syncStateToFirestore());
         };
 
+        function getUnpaidOrders() {
+            const activeData = getActiveDateObj();
+            return (activeData.orders || []).filter(o => !o.paid);
+        }
+
+        function buildOrderSummaryText() {
+            const activeData = getActiveDateObj();
+            const orders = activeData.orders || [];
+            const counts = {};
+            const prices = {};
+            (activeData.menu || []).forEach(m => { counts[m.name] = 0; prices[m.name] = Number(m.price) || 0; });
+            orders.forEach(o => {
+                const dish = String(o.dish || '未填寫餐點');
+                counts[dish] = (counts[dish] || 0) + 1;
+                if (prices[dish] === undefined) prices[dish] = Number(o.price) || 0;
+            });
+            const names = Object.keys(counts).filter(d => counts[d] > 0);
+            const total = orders.reduce((sum,o) => sum + (Number(o.price)||0), 0);
+            const lines = [activeData.name || '今日午餐', ''];
+            names.forEach((dish, i) => {
+                const qty = counts[dish];
+                const price = prices[dish] || 0;
+                lines.push(`${i+1}. ${dish} × ${qty} = $${qty * price}`);
+            });
+            lines.push('', `共 ${orders.length} 份`, `總金額 $${total}`);
+            return lines.join('\n');
+        }
+
+        async function copyTextToClipboard(text, successMsg) {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+                }
+                showToast(successMsg);
+            } catch (e) {
+                showToast('複製失敗，請手動選取文字');
+            }
+        }
+
+        function copyOrderSummary() {
+            copyTextToClipboard(buildOrderSummaryText(), '訂單統計已複製！');
+        }
+
+        function buildUnpaidText() {
+            const activeData = getActiveDateObj();
+            const unpaid = getUnpaidOrders();
+            const total = unpaid.reduce((sum,o) => sum + (Number(o.price)||0), 0);
+            const lines = [`${activeData.name || '今日午餐'} 未付款名單`];
+            unpaid.forEach((o, i) => lines.push(`${i+1}. ${o.name || '未填姓名'}｜${o.dish || '未填寫餐點'}｜$${Number(o.price)||0}`));
+            lines.push('', `共 ${unpaid.length} 人`, `未付款 $${total}`);
+            return lines.join('\n');
+        }
+
+        function copyUnpaidList() {
+            if (!getUnpaidOrders().length) { showToast('目前沒有未付款訂單'); return; }
+            copyTextToClipboard(buildUnpaidText(), '未付款名單已複製！');
+        }
+
+        function openUnpaidModal() {
+            const modal = document.getElementById('unpaidModal');
+            const list = document.getElementById('unpaidList');
+            const summary = document.getElementById('unpaidModalSummary');
+            if (!modal || !list) return;
+            const unpaid = getUnpaidOrders();
+            const total = unpaid.reduce((sum,o) => sum + (Number(o.price)||0), 0);
+            summary.innerText = `共 ${unpaid.length} 人未付款｜$${total}`;
+            list.innerHTML = '';
+            if (!unpaid.length) {
+                list.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm">目前全部已付款 🎉</div>';
+            } else {
+                unpaid.forEach((o, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between gap-3 rounded-xl bg-rose-50 border border-rose-100 px-4 py-3';
+                    div.innerHTML = `<div class="min-w-0"><div class="font-semibold text-slate-800">${i+1}. ${escapeHtml(o.name || '未填姓名')}</div><div class="text-xs text-slate-500 mt-0.5">${escapeHtml(o.dish || '未填寫餐點')}</div></div><div class="font-bold text-rose-700 whitespace-nowrap">$${Number(o.price)||0}</div>`;
+                    list.appendChild(div);
+                });
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeUnpaidModal() {
+            const modal = document.getElementById('unpaidModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
         function renderSummary() {
             const activeData = getActiveDateObj();
             const orders = activeData.orders || [];
@@ -2157,6 +2288,17 @@
                 `;
                 breakdownBody.appendChild(tr);
             });
+
+            const unpaid = getUnpaidOrders();
+            const unpaidTotal = unpaid.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+            const unpaidSummary = document.getElementById('unpaidSummary');
+            const unpaidAmount = document.getElementById('unpaidAmount');
+            const unpaidViewBtn = document.getElementById('unpaidViewBtn');
+            const unpaidCopyBtn = document.getElementById('unpaidCopyBtn');
+            if (unpaidSummary) unpaidSummary.innerText = unpaid.length ? `目前有 ${unpaid.length} 人尚未付款` : '目前全部已付款 🎉';
+            if (unpaidAmount) unpaidAmount.innerText = unpaid.length ? `未付款 $${unpaidTotal}` : '未付款 $0';
+            if (unpaidViewBtn) unpaidViewBtn.innerText = unpaid.length ? '查看名單' : '查看';
+            if (unpaidCopyBtn) unpaidCopyBtn.classList.toggle('hidden', unpaid.length === 0);
         }
 
 
@@ -2271,6 +2413,8 @@
         document.addEventListener('click', function(event) {
             const modal = document.getElementById('lunchHistoryModal');
             if (modal && event.target === modal) closeLunchHistoryModal();
+            const unpaidModal = document.getElementById('unpaidModal');
+            if (unpaidModal && event.target === unpaidModal) closeUnpaidModal();
         });
 
 
