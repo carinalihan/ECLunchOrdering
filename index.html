@@ -1117,6 +1117,9 @@
             }
 
             const selectEl = document.getElementById('inputDish');
+            const orderModal = document.getElementById('orderModal');
+            const isOrderModalOpen = orderModal && !orderModal.classList.contains('hidden');
+            const selectedDishBeforeRender = isOrderModalOpen ? selectEl.value : '';
             selectEl.innerHTML = '';
             (activeData.menu || []).forEach(item => {
                 const opt = document.createElement('option');
@@ -1124,6 +1127,12 @@
                 opt.textContent = `${item.name} ($${item.price})`;
                 selectEl.appendChild(opt);
             });
+            // 輪詢同步重新 render 時，不要把使用者正在選的餐點重設成第一項。
+            if (isOrderModalOpen && selectedDishBeforeRender &&
+                Array.from(selectEl.options).some(opt => opt.value === selectedDishBeforeRender)) {
+                selectEl.value = selectedDishBeforeRender;
+                updatePriceFromDish();
+            }
 
             const tbody = document.getElementById('ordersTableBody');
             const emptyState = document.getElementById('emptyState');
@@ -2004,12 +2013,6 @@
             }
             lunchHistoryName = name;
             renderLunchHistory();
-        }
-
-        function parseLunchHistoryDate(dateId) {
-            const m = String(dateId || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-            if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-            return null;
         }
 
         function renderLunchHistory() {
