@@ -11,7 +11,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', 'Inter', sans-serif; }
-    </style>
+    
+        /* 2026 header refresh */
+        @media (max-width: 1023px) {
+            header .relative.max-w-7xl { padding-top: 14px; padding-bottom: 14px; }
+        }
+        @media (max-width: 639px) {
+            header .relative.max-w-7xl > div:last-child {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            header .relative.max-w-7xl > div:last-child > div {
+                border-left: 0 !important;
+                padding-left: 0 !important;
+            }
+        }
+
+</style>
 
         <style id="mobile-order-card-style">
         /* 手機版訂單：精簡成 2 行，避免每筆訂單過長 */
@@ -190,36 +206,39 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <header class="bg-blue-600 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="bg-white text-blue-600 p-2.5 rounded-xl shadow font-bold text-xl">
-                    <i class="fa-solid fa-utensils"></i>
+    <header class="relative overflow-hidden bg-[#eef6ff] border-b border-blue-100">
+        <!-- soft wave decoration -->
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute -right-24 -top-20 w-[52%] h-44 rounded-[50%] bg-blue-100/70 rotate-[-8deg]"></div>
+            <div class="absolute -right-10 top-10 w-[48%] h-36 rounded-[50%] bg-white/80 rotate-[-8deg]"></div>
+            <div class="absolute left-[34%] -bottom-28 w-[46%] h-48 rounded-[50%] bg-blue-50/80 rotate-[7deg]"></div>
+        </div>
+
+        <div class="relative max-w-7xl mx-auto px-5 py-4 sm:px-6 flex flex-col lg:flex-row items-center gap-4">
+            <div class="flex items-center gap-4 min-w-0">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-200/70">
+                    <i class="fa-solid fa-utensils text-2xl sm:text-3xl"></i>
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight" id="headerTitle">良興電商 午餐食刻！</h1>
-                    <p class="text-blue-100 text-sm">E-Commerce Lunch Ordering</p>
+                <div class="min-w-0">
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800 leading-tight" id="headerTitle">良興電商 午餐食刻！</h1>
+                    <p class="text-slate-500 text-sm sm:text-base tracking-wide mt-0.5">E-Commerce Lunch Ordering</p>
                 </div>
             </div>
 
-            <!-- Prominent Restaurant & Collector Banner in Center/Header -->
-            <div class="flex flex-wrap items-center justify-center gap-3 bg-blue-700/80 px-5 py-2.5 rounded-2xl border border-blue-400/30 shadow-inner">
+            <!-- Restaurant / collector information remains functional, but is visually quieter -->
+            <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-blue-100 shadow-sm lg:ml-6">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-store text-yellow-300 text-lg"></i>
-                    <span id="headerRestaurant" class="text-xl font-bold text-white tracking-wide">福隆便當 02-8982-0267</span>
+                    <i class="fa-solid fa-store text-blue-600"></i>
+                    <span id="headerRestaurant" class="text-base sm:text-xl font-bold text-slate-700 tracking-wide">福隆便當 02-8982-0267</span>
                 </div>
-                <div class="text-blue-200 text-sm border-l border-blue-400/40 pl-3 flex items-center gap-1.5">
-                    <i class="fa-solid fa-wallet text-blue-200"></i>
-                    <span>收錢：<strong id="headerCollector" class="text-white font-semibold">育靜</strong></span>
+                <div class="text-slate-500 text-sm border-l border-slate-200 pl-4 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wallet text-blue-500"></i>
+                    <span>收錢：<strong id="headerCollector" class="text-slate-700 font-semibold">育靜</strong></span>
                 </div>
-                <div class="text-blue-200 text-sm border-l border-blue-400/40 pl-3 flex items-center gap-1.5">
-                    <i class="fa-regular fa-clock text-blue-200"></i>
+                <div class="text-slate-500 text-sm border-l border-slate-200 pl-4 flex items-center gap-1.5">
+                    <i class="fa-regular fa-clock text-blue-500"></i>
                     <span id="headerDeadline">9/8(二) 09:40 結單</span>
                 </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <!-- Top right actions removed -->
             </div>
         </div>
     </header>
@@ -264,7 +283,7 @@
                                 <th class="py-3 px-4 text-center w-16">序號</th>
                                 <th class="py-3 px-4">名字</th>
                                 <th class="py-3 px-4">主餐</th>
-                                <th class="py-3 px-4 text-left w-40">備註</th>
+                                <th class="py-3 px-4 text-left w-40">備註(<strong>可許願，不保證</strong>)</th>
                                 <th class="py-3 px-4 text-right w-24">價格</th>
                                 <th class="py-3 px-4 text-center w-40 min-w-[160px]">已付款</th>
                             </tr>
@@ -382,7 +401,7 @@
                     <input type="number" id="inputPrice" required value="80" readonly class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 cursor-not-allowed text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">備註（選填）</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">備註（可許願，但不保證）</label>
                     <input type="text" id="inputNote" maxlength="100" placeholder="例如：不要辣、少飯、加蛋" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
                 <div class="flex items-center gap-2 pt-1">
@@ -413,7 +432,7 @@
                     <p class="text-xs text-slate-400 mt-1">只儲存網址，不會顯示圖片預覽。</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填）</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填，上傳100K以下）</label>
                     <input type="file" id="menuImageFile" accept="image/*" onchange="handleMenuImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
                     <input type="hidden" id="menuImageUrl" value="">
                     <div id="menuImagePreviewContainer" class="mt-2 hidden">
@@ -458,14 +477,14 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">結單時間</label>
                     <input type="text" id="inputEditDateDeadline" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
-                <div class="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+                <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                     <div>
-                        <div class="text-sm font-semibold text-slate-700">訂單狀態</div>
-                        <div class="text-xs text-slate-400 mt-0.5">勾選後停止新增訂單</div>
+                        <div class="text-sm font-semibold text-slate-700">訂餐狀態</div>
+                        <div class="text-xs text-slate-400 mt-0.5">勾選後，首頁會顯示「已結單」，並禁止新增訂單</div>
                     </div>
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <label class="inline-flex items-center gap-2 cursor-pointer flex-shrink-0 whitespace-nowrap">
                         <input type="checkbox" id="inputEditDateClosed" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
-                        <span class="text-sm font-medium text-slate-700">已結單</span>
+                        <span class="text-sm font-semibold text-slate-700">已結單</span>
                     </label>
                 </div>
                 <div class="flex justify-end gap-3 pt-3">
@@ -501,6 +520,13 @@
                     <input type="text" id="inputNewDateName" required placeholder="9/9(三)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單來源</label>
+                    <select id="menuTemplateSelect" onchange="applyMenuTemplate(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                    </select>
+                    <p class="text-xs text-slate-400 mt-1">可直接帶入之前建立過的菜單；只帶入菜單，不會帶入之前的訂單。</p>
+                </div>
+                <div id="menuTemplatePreview" class="hidden rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600"></div>
+                <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">餐廳與電話</label>
                     <input type="text" id="inputNewDateRestaurant" placeholder="福隆便當 02-8982-0267" value="福隆便當 02-8982-0267" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
@@ -512,13 +538,6 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">結單時間 (例如: 9/9(三) 09:40 結單)</label>
                     <input type="text" id="inputNewDateDeadline" placeholder="9/9(三) 09:40 結單" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單來源</label>
-                    <select id="menuTemplateSelect" onchange="applyMenuTemplate(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
-                    </select>
-                    <p class="text-xs text-slate-400 mt-1">可直接帶入之前建立過的菜單；只帶入菜單，不會帶入之前的訂單。</p>
-                </div>
-                <div id="menuTemplatePreview" class="hidden rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600"></div>
                 <div class="flex justify-end gap-3 pt-3">
                     <button type="button" onclick="closeNewDateModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium">取消</button>
                     <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm">建立日期</button>
@@ -567,7 +586,7 @@
                     <p class="text-xs text-slate-400 mt-1">只儲存網址，不會自動顯示圖片預覽。</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填）</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">菜單圖片（選填，上傳100K以下）</label>
                     <input type="file" id="menuMasterImageFile" accept="image/*" onchange="handleMenuMasterImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     <input type="hidden" id="menuMasterImageUrl" value="">
                     <div id="menuMasterImagePreviewContainer" class="mt-2 hidden">
@@ -620,7 +639,6 @@
                     title: "良興電商 午餐食刻！",
                     menuUrl: "",
                     menuImageUrl: "",
-                    isClosed: false,
                     menu: [
                         { name: "招牌便當", price: 80 },
                         { name: "瘦肉便當", price: 80 },
@@ -642,6 +660,9 @@
         let syncFrame = null;
         // 防止圖片上傳後，舊的 Google Sheet 資料回讀把剛上傳的圖片蓋掉。
         let pendingSyncVersion = 0;
+        let pendingExpectedServerVersion = 0;
+        let lastServerState = null;
+        const CLIENT_ID_KEY = "eclunchordering_client_id_v1";
         // 圖片上傳序號：避免連續選圖時，較慢完成的舊圖片把新圖片蓋回去。
         let menuImageUploadToken = 0;
         let menuMasterImageUploadToken = 0;
@@ -697,9 +718,10 @@
                 if (saved && saved.dates && typeof saved.dates === "object") {
                     appState = normalizeState(saved);
                     restoreImageBackups(appState);
-                    // 若上一次儲存尚未被遠端確認，先保護本機版本，避免重新整理時被舊資料蓋掉。
-                    pendingSyncVersion = Number(appState._syncVersion || 0);
-                    isSaving = pendingSyncVersion > 0;
+                    // 本機資料先顯示；是否已同步由 server version 判斷，不再把 client syncVersion 當成 server 版本。
+                    pendingSyncVersion = 0;
+                    pendingExpectedServerVersion = 0;
+                    isSaving = false;
                     try {
                         const selected = localStorage.getItem(LOCAL_SELECTED_DATE_KEY);
                         if (selected && appState.dates[selected]) appState.currentDateId = selected;
@@ -712,6 +734,43 @@
             return false;
         }
 
+        function getClientId() {
+            try {
+                let id = localStorage.getItem(CLIENT_ID_KEY);
+                if (!id) {
+                    id = 'client_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+                    localStorage.setItem(CLIENT_ID_KEY, id);
+                }
+                return id;
+            } catch (e) {
+                return 'client_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+            }
+        }
+
+        function cloneStateForSync(value) {
+            try { return JSON.parse(JSON.stringify(value)); } catch (e) { return null; }
+        }
+
+        function touchDateMeta(dateObj) {
+            if (!dateObj) return;
+            dateObj._updatedAt = Date.now();
+        }
+
+        function touchDateMenu(dateObj) {
+            if (!dateObj) return;
+            dateObj._menuUpdatedAt = Date.now();
+        }
+
+        function touchMenuMaster(master) {
+            if (!master) return;
+            master._updatedAt = Date.now();
+        }
+
+        function touchOrder(order) {
+            if (!order) return;
+            order._updatedAt = Date.now();
+        }
+
         function normalizeState(state) {
             if (!state || typeof state !== "object") return state;
 
@@ -722,8 +781,20 @@
                 if (state.dates[k].menuUrl === undefined) state.dates[k].menuUrl = "";
                 if (state.dates[k].menuImageUrl === undefined) state.dates[k].menuImageUrl = "";
                 if (state.dates[k].menuSourceId === undefined) state.dates[k].menuSourceId = "";
-                if (state.dates[k].isClosed === undefined) state.dates[k].isClosed = false;
                 if (!Array.isArray(state.dates[k].menu)) state.dates[k].menu = [];
+                if (!Array.isArray(state.dates[k].orders)) state.dates[k].orders = [];
+                if (!state.dates[k]._deletedOrderIds || typeof state.dates[k]._deletedOrderIds !== 'object') state.dates[k]._deletedOrderIds = {};
+                if (state.dates[k]._updatedAt === undefined) state.dates[k]._updatedAt = 0;
+                if (state.dates[k].isClosed === undefined) state.dates[k].isClosed = false;
+                if (state.dates[k]._menuUpdatedAt === undefined) state.dates[k]._menuUpdatedAt = state.dates[k]._updatedAt || 0;
+                state.dates[k].orders.forEach((o, i) => {
+                    if (!o.id) o.id = 'order_legacy_' + k + '_' + i + '_' + String(o.name || '') + '_' + String(o.dish || '');
+                    if (o._updatedAt === undefined) o._updatedAt = 0;
+                });
+            });
+            state.menuHistory.forEach((h, i) => {
+                if (!h.id) h.id = 'menu_legacy_' + i + '_' + String(h.restaurant || h.name || '');
+                if (h._updatedAt === undefined) h._updatedAt = 0;
             });
 
             // 舊資料升級：把既有日期曾使用過的菜單自動建立成歷史菜單。
@@ -763,7 +834,7 @@
             // 若本機還有尚未被 Google Sheet 確認的版本，絕對不能用舊資料覆蓋本機。
             if (syncTimer) clearInterval(syncTimer);
             syncTimer = setInterval(() => {
-                if (!isSaving || pendingSyncVersion > 0) loadStateFromSheet();
+                loadStateFromSheet();
             }, 3000);
         }
 
@@ -798,11 +869,11 @@
 
                 window[callbackName] = function(data) {
                     if (data && data.ok && data.state) {
-                        const incomingVersion = Number(data.state._syncVersion || 0);
-                        // 只要遠端版本比本機正在等待確認的版本舊，就完全不採用。
-                        // 這就是修正「圖片出現一下又消失」的關鍵。
-                        if (pendingSyncVersion > 0 && incomingVersion < pendingSyncVersion) {
-                            console.warn("忽略舊的 Google Sheet 資料", incomingVersion, pendingSyncVersion);
+                        const incomingServerVersion = Number(data.state._serverVersion || 0);
+                        // 若本機剛送出資料，先等伺服器至少產生一個新版本。
+                        // 避免 GET 比 POST 更快回來時，把剛新增的菜單洗掉。
+                        if (pendingExpectedServerVersion > 0 && incomingServerVersion < pendingExpectedServerVersion) {
+                            console.warn("忽略尚未包含本次寫入的 Google Sheet 狀態", incomingServerVersion, pendingExpectedServerVersion);
                             renderApp();
                             finish();
                             return;
@@ -836,21 +907,23 @@
                             });
                         }
 
+                        lastServerState = cloneStateForSync(incoming);
                         appState = incoming;
                         if (selectedDateId && appState.dates && appState.dates[selectedDateId]) {
                             appState.currentDateId = selectedDateId;
                         }
                         saveLocalState();
-                        if (backupRestored && pendingSyncVersion === 0) {
+                        if (pendingExpectedServerVersion > 0 && incomingServerVersion >= pendingExpectedServerVersion) {
+                            pendingExpectedServerVersion = 0;
+                            pendingSyncVersion = 0;
+                            isSaving = false;
+                        }
+                        if (backupRestored && pendingExpectedServerVersion === 0) {
                             // 遠端曾經沒有圖片時，自動把本機備份重新送回共用資料。
                             // 只在「補回圖片」時觸發，不改其他資料。
                             requestAnimationFrame(() => syncStateToFirestore());
                         }
 
-                        if (pendingSyncVersion > 0 && incomingVersion >= pendingSyncVersion) {
-                            pendingSyncVersion = 0;
-                            isSaving = false;
-                        }
                     }
 
                     renderApp();
@@ -873,16 +946,21 @@
         }
 
         function syncStateToFirestore() {
-            // 函式名稱保留，實際改為透過隱藏 HTML form POST。
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
                 console.warn("尚未設定 Google Apps Script URL");
                 return;
             }
 
-            // 每次儲存都產生一個單調遞增版本。Apps Script 會原樣保存這個版本；
-            // 讀回時如果發現遠端還是舊版本，就不允許舊資料蓋掉本機。
+            const baseServerVersion = Number(
+                (lastServerState && lastServerState._serverVersion) ||
+                appState._serverVersion || 0
+            );
+            appState._clientId = getClientId();
+            appState._baseServerVersion = baseServerVersion;
             appState._syncVersion = Math.max(Date.now(), Number(appState._syncVersion || 0) + 1);
             pendingSyncVersion = appState._syncVersion;
+            // server 每接受一次寫入就 +1；即使中間有其他人寫入，也會大於這個基準。
+            pendingExpectedServerVersion = baseServerVersion + 1;
             isSaving = true;
             saveLocalState();
 
@@ -905,23 +983,22 @@
                 input.type = "hidden";
                 input.name = "state";
                 input.value = JSON.stringify(appState);
-
                 form.appendChild(input);
                 document.body.appendChild(form);
                 form.submit();
                 form.remove();
 
-                // 不再用固定秒數解除 isSaving；等下一次 GET 確認版本，避免舊資料覆蓋新圖片。
+                // 不用固定秒數當作「成功」；等下一次 GET 看到 server version 才解除保護。
                 setTimeout(() => {
-                    if (pendingSyncVersion === appState._syncVersion) {
-                        // 即使 Apps Script 回應較慢，也繼續保護本機資料；下一輪會再次確認。
-                        console.log("等待 Google Sheet 確認版本：", pendingSyncVersion);
+                    if (isSaving && pendingExpectedServerVersion > 0) {
+                        // 若 POST 網路延遲，暫時保持本機資料，不讓輪詢覆蓋。
+                        console.log("等待 Google Sheet 合併確認：", pendingExpectedServerVersion);
                     }
                 }, 1500);
-
             } catch (err) {
                 console.error("Google Sheet 同步寫入失敗:", err);
                 isSaving = false;
+                pendingExpectedServerVersion = 0;
                 showToast("同步失敗，請檢查 Google Apps Script");
             }
         }
@@ -940,7 +1017,7 @@
             const addOrderBtn = document.getElementById('addOrderBtn');
             if (addOrderBtn) {
                 if (activeData.isClosed) {
-                    addOrderBtn.className = "bg-slate-300 text-slate-600 font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm cursor-pointer";
+                    addOrderBtn.className = "bg-slate-200 text-slate-500 font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm cursor-pointer";
                     addOrderBtn.innerHTML = '<i class="fa-solid fa-lock"></i> 已結單';
                 } else {
                     addOrderBtn.className = "bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm";
@@ -949,9 +1026,23 @@
             }
 
             document.getElementById('headerTitle').innerText = "良興電商 午餐食刻！";
-            document.getElementById('headerDeadline').innerText = activeData.deadline || "";
+            document.getElementById('headerDeadline').innerText = activeData.isClosed
+                ? ((activeData.deadline || "") + "　已結單")
+                : (activeData.deadline || "");
             document.getElementById('headerRestaurant').innerText = activeData.restaurant || "福隆便當 02-8982-0267";
             document.getElementById('headerCollector').innerText = activeData.collector || "育靜";
+
+            const addOrderBtn = document.querySelector('button[onclick="openAddModal()"]');
+            if (addOrderBtn) {
+                addOrderBtn.disabled = false;
+                addOrderBtn.classList.toggle('opacity-50', !!activeData.isClosed);
+                addOrderBtn.classList.toggle('cursor-not-allowed', !!activeData.isClosed);
+                addOrderBtn.classList.toggle('hover:bg-blue-700', !activeData.isClosed);
+                addOrderBtn.innerHTML = activeData.isClosed
+                    ? '<i class="fa-solid fa-lock"></i> 已結單'
+                    : '<i class="fa-solid fa-plus"></i> 新增訂單';
+                addOrderBtn.title = activeData.isClosed ? '本日已結單，無法新增訂單' : '';
+            }
 
             const viewMenuBtn = document.getElementById('viewMenuBtn');
             if (activeData.menuImageUrl || activeData.menuUrl) {
@@ -1052,6 +1143,7 @@
             document.getElementById('inputEditDateDeadline').value = activeData.deadline || '';
             const closedInput = document.getElementById('inputEditDateClosed');
             if (closedInput) closedInput.checked = !!activeData.isClosed;
+            document.getElementById('inputEditDateClosed').checked = !!activeData.isClosed;
             document.getElementById('editCurrentDateModal').classList.remove('hidden');
         };
 
@@ -1062,26 +1154,14 @@
         window.handleEditCurrentDateSubmit = function(event) {
             event.preventDefault();
             const activeData = getActiveDateObj();
-
-            const wasClosed = !!activeData.isClosed;
-            const wantsClosed = document.getElementById('inputEditDateClosed')
-                ? document.getElementById('inputEditDateClosed').checked
-                : wasClosed;
-
-            // 只有「已結單 → 取消已結單」需要通關密語。
-            if (wasClosed && !wantsClosed) {
-                const password = prompt("請輸入通關密語");
-                if (password !== "lihan") {
-                    showToast("通關密語錯誤，未重新開放訂單");
-                    return;
-                }
-            }
-
+            const oldDeadline = activeData.deadline || '';
             activeData.name = document.getElementById('inputEditDateName').value.trim() || activeData.name;
             activeData.restaurant = document.getElementById('inputEditDateRestaurant').value.trim() || activeData.restaurant;
             activeData.collector = document.getElementById('inputEditDateCollector').value.trim() || activeData.collector;
             activeData.deadline = document.getElementById('inputEditDateDeadline').value.trim() || activeData.deadline;
-            activeData.isClosed = wantsClosed;
+            const deadlineChanged = activeData.deadline !== oldDeadline;
+            activeData.isClosed = deadlineChanged ? false : document.getElementById('inputEditDateClosed').checked;
+            touchDateMeta(activeData);
 
             closeEditCurrentDateModal();
             saveLocalState();
@@ -1115,40 +1195,58 @@
             document.getElementById('editMenuModal').classList.add('hidden');
         };
 
-        // 先在瀏覽器壓縮圖片；儲存時由 Apps Script 自動轉存到 Google Drive，Google Sheet 只保存圖片網址。
+        // 先在瀏覽器壓縮圖片；儲存時由 Apps Script 自動轉存到 Google Drive，
+        // Google Sheet 只保存圖片網址。
+        // 上傳限制以「原始檔案 100KB 以下」為準；壓縮後保留較高畫質，
+        // 不再用 44KB Base64 的過度限制，避免正常菜單圖片被判定為太大。
         async function compressImageForStorage(file) {
             return new Promise((resolve, reject) => {
+                if (file.size > 200 * 1024) {
+                    reject(new Error("原始圖片超過100KB"));
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onerror = () => reject(new Error("圖片讀取失敗"));
                 reader.onload = (e) => {
                     const img = new Image();
                     img.onerror = () => reject(new Error("圖片解析失敗"));
                     img.onload = () => {
-                        let maxSide = 900;
-                        let quality = 0.62;
+                        let maxSide = 1400;
+                        let quality = 0.78;
                         let compressed = '';
 
-                        for (let i = 0; i < 7; i++) {
+                        // Base64 會比二進位檔案大約 4/3，
+                        // 這裡把 Data URL 控制在約 130KB 內，給 POST 傳輸留安全空間。
+                        const maxDataUrlLength = 130000;
+
+                        for (let i = 0; i < 10; i++) {
                             const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
                             const canvas = document.createElement('canvas');
                             canvas.width = Math.max(1, Math.round(img.width * scale));
                             canvas.height = Math.max(1, Math.round(img.height * scale));
+
                             const ctx = canvas.getContext('2d', { alpha: false });
                             ctx.fillStyle = '#ffffff';
                             ctx.fillRect(0, 0, canvas.width, canvas.height);
                             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
                             compressed = canvas.toDataURL('image/jpeg', quality);
 
-                            // 留安全空間，避免接近 Google Sheet 儲存格上限。
-                            if (compressed.length <= 44000) break;
-                            if (quality > 0.40) quality -= 0.06;
-                            else maxSide -= 100;
+                            if (compressed.length <= maxDataUrlLength) break;
+
+                            if (quality > 0.48) {
+                                quality -= 0.05;
+                            } else {
+                                maxSide -= 120;
+                            }
                         }
 
-                        if (!compressed || compressed.length > 48000) {
-                            reject(new Error('圖片仍然太大'));
+                        if (!compressed || compressed.length > maxDataUrlLength) {
+                            reject(new Error('圖片壓縮後仍然過大'));
                             return;
                         }
+
                         resolve(compressed);
                     };
                     img.src = e.target.result;
@@ -1191,7 +1289,8 @@
             event.preventDefault();
             const activeData = getActiveDateObj();
             const menuUrl = document.getElementById('menuUrlInput').value.trim();
-            const menuImageUrl = document.getElementById('menuImageUrl').value;
+            const menuImageUrlInput = document.getElementById('menuImageUrl');
+            const menuImageUrl = menuImageUrlInput.value || activeData.menuImageUrl || '';
             const rawText = document.getElementById('menuItemsTextarea').value;
 
             const newMenu = [];
@@ -1212,6 +1311,7 @@
             }
             activeData.menuUrl = menuUrl;
             activeData.menuImageUrl = menuImageUrl;
+            touchDateMenu(activeData);
             if (menuImageUrl) saveLocalImageBackup(appState.currentDateId, menuImageUrl);
             const master = findOrCreateMenuMaster(activeData);
             if (master) {
@@ -1222,6 +1322,7 @@
                 master.menuImageUrl = activeData.menuImageUrl;
                 master.menu = JSON.parse(JSON.stringify(activeData.menu || []));
                 activeData.menuSourceId = master.id;
+                touchMenuMaster(master);
             }
 
             closeEditMenuModal();
@@ -1416,8 +1517,11 @@
             if (!confirm(message)) return;
 
             history.splice(index, 1);
+            if (!appState._deletedMenuIds || typeof appState._deletedMenuIds !== 'object') appState._deletedMenuIds = {};
+            appState._deletedMenuIds[id] = Date.now();
             usedDates.forEach(d => {
                 d.menuSourceId = '';
+                touchDateMenu(d);
             });
 
             saveLocalState();
@@ -1505,7 +1609,8 @@
             const id = document.getElementById('menuMasterId').value;
             const restaurant = document.getElementById('menuMasterRestaurant').value.trim();
             const menuUrl = document.getElementById('menuMasterUrl').value.trim();
-            const menuImageUrl = document.getElementById('menuMasterImageUrl').value;
+            const menuImageUrlInput = document.getElementById('menuMasterImageUrl');
+            const menuImageUrl = menuImageUrlInput.value || (id ? ((history.find(h => h.id === id) || {}).menuImageUrl || '') : '');
             const syncDates = document.getElementById('menuMasterSyncDates').checked;
             const newMenu = [];
             document.getElementById('menuMasterItems').value.split('\n').forEach(line => {
@@ -1529,6 +1634,7 @@
             master.menuImageUrl = menuImageUrl;
             master.menu = JSON.parse(JSON.stringify(newMenu));
             master.lastUsed = new Date().toLocaleDateString('zh-TW');
+            touchMenuMaster(master);
 
             if (syncDates) {
                 Object.values(appState.dates || {}).forEach(d => {
@@ -1537,6 +1643,7 @@
                         d.menuUrl = menuUrl;
                         d.menuImageUrl = menuImageUrl;
                         d.menu = JSON.parse(JSON.stringify(newMenu));
+                        touchDateMenu(d);
                     }
                 });
             }
@@ -1574,11 +1681,15 @@
                 collector: collector,
                 title: inheritedTitle,
                 menuUrl: template ? (template.menuUrl || "") : "",
-                menuImageUrl: "",
+                menuImageUrl: template ? (template.menuImageUrl || "") : "",
                 menuSourceId: template ? template.id : "",
                 isClosed: false,
                 menu: inheritedMenu,
-                orders: []
+                orders: [],
+                isClosed: false,
+                _updatedAt: Date.now(),
+                _menuUpdatedAt: Date.now(),
+                _deletedOrderIds: {}
             };
             rememberMenuHistory(appState.dates[dateId]);
 
@@ -1598,7 +1709,6 @@
                 showToast("已結單下次請早！");
                 return;
             }
-
             document.getElementById('modalTitle').innerText = '新增訂單';
             document.getElementById('editIndex').value = '';
             document.getElementById('inputName').value = '';
@@ -1653,6 +1763,10 @@
         window.handleFormSubmit = function(event) {
             event.preventDefault();
             const activeData = getActiveDateObj();
+            if (activeData.isClosed && document.getElementById('editIndex').value === '') {
+                showToast("已結單下次請早！");
+                return;
+            }
             const editIndex = document.getElementById('editIndex').value;
             const name = document.getElementById('inputName').value.trim();
             const dish = document.getElementById('inputDish').value;
@@ -1662,7 +1776,7 @@
 
             if (!name) return;
 
-            const newOrder = { name, dish, price, note, paid };
+            const newOrder = { id: 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name, dish, price, note, paid, _updatedAt: Date.now() };
 
             if (!activeData.orders) activeData.orders = [];
 
@@ -1670,7 +1784,9 @@
                 activeData.orders.push(newOrder);
                 showToast("成功新增訂單！");
             } else {
+                newOrder.id = activeData.orders[editIndex].id || newOrder.id;
                 activeData.orders[editIndex] = newOrder;
+                touchOrder(newOrder);
                 showToast("訂單已更新！");
             }
 
@@ -1695,7 +1811,15 @@
                 return;
             }
 
+            const password = prompt("請輸入通關密語");
+            if (password !== "lihan") {
+                alert("通關密語錯誤，無法刪除！");
+                return;
+            }
+
             delete appState.dates[currentId];
+            if (!appState._deletedDates || typeof appState._deletedDates !== 'object') appState._deletedDates = {};
+            appState._deletedDates[currentId] = Date.now();
             const remainingIds = Object.keys(appState.dates);
             appState.currentDateId = remainingIds[remainingIds.length - 1];
 
@@ -1708,7 +1832,12 @@
 
         window.deleteOrder = function(index) {
             const activeData = getActiveDateObj();
+            const removed = activeData.orders[index];
             activeData.orders.splice(index, 1);
+            if (removed && removed.id) {
+                if (!activeData._deletedOrderIds || typeof activeData._deletedOrderIds !== 'object') activeData._deletedOrderIds = {};
+                activeData._deletedOrderIds[removed.id] = Date.now();
+            }
             saveLocalState();
             renderApp();
             // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
@@ -1719,6 +1848,7 @@
         window.togglePaid = function(index) {
             const activeData = getActiveDateObj();
             activeData.orders[index].paid = !activeData.orders[index].paid;
+            touchOrder(activeData.orders[index]);
             saveLocalState();
             renderSummary();
             requestAnimationFrame(() => syncStateToFirestore());
