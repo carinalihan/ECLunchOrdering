@@ -1013,6 +1013,8 @@
         }
 
         window.renderApp = function() {
+            // 多人同步會反覆 renderApp；若目前正在新增／編輯訂單，
+            // 先保存整張表單，render 完成後再恢復，避免主餐／備註／姓名被重設。
             const orderModalForSnapshot = document.getElementById('orderModal');
             const preserveOrderForm = orderModalForSnapshot && !orderModalForSnapshot.classList.contains('hidden');
             const orderFormSnapshot = preserveOrderForm ? {
@@ -1078,7 +1080,7 @@
             const selectedDishBeforeRender = isOrderModalOpen ? selectEl.value : '';
             const dishStillExists = (activeData.menu || []).some(item => item.name === selectedDishBeforeRender);
 
-            // 多人同步時，如果同仁正在填單，保留目前選擇的主餐。
+            // 同步重繪時，如果同仁正在填單，保留目前主餐。
             if (!isOrderModalOpen || !selectedDishBeforeRender || !dishStillExists) {
                 selectEl.innerHTML = '';
                 (activeData.menu || []).forEach(item => {
@@ -1089,6 +1091,7 @@
                 });
             }
 
+            // 餐點若已被管理者移除，不要默默跳成第一個餐點。
             if (isOrderModalOpen && selectedDishBeforeRender && !dishStillExists) {
                 if (selectEl.dataset.removedDish !== selectedDishBeforeRender) {
                     selectEl.dataset.removedDish = selectedDishBeforeRender;
@@ -1134,9 +1137,9 @@
             }
 
             renderSummary();
-        };
-            // 同步重繪完成後恢復整張正在編輯的訂單表單。
-            // 因此修改備註、姓名、付款狀態時，主餐不會被重設成第一個。
+
+            // renderApp 完成後恢復正在編輯中的整張訂單表單。
+            // 這會一起保護主餐、備註、姓名、價格與付款狀態。
             if (orderFormSnapshot) {
                 const nameEl = document.getElementById('inputName');
                 const dishEl = document.getElementById('inputDish');
@@ -1155,7 +1158,7 @@
                     dishEl.value = orderFormSnapshot.dish;
                 }
             }
-
+        };
 
         window.switchDate = function(dateId) {
             if (!appState.dates || !appState.dates[dateId]) return;
@@ -1765,6 +1768,7 @@
             document.getElementById('inputNote').value = '';
             document.getElementById('inputPaid').checked = false;
             updatePriceFromDish();
+            delete document.getElementById('inputDish').dataset.removedDish;
             document.getElementById('orderModal').classList.remove('hidden');
         };
 
@@ -1784,6 +1788,7 @@
                 document.getElementById('inputPrice').value = order.price;
             }
             document.getElementById('inputPaid').checked = order.paid;
+            delete document.getElementById('inputDish').dataset.removedDish;
 
             document.getElementById('orderModal').classList.remove('hidden');
         };
@@ -1812,6 +1817,7 @@
 
                 window.handleFormSubmit = function(event) {
             event.preventDefault();
+
             if (isSubmittingOrder) return;
 
             const activeData = getActiveDateObj();
@@ -1831,6 +1837,7 @@
 
             if (!name) return;
 
+            // 若同步期間餐點已被刪除，絕不自動改成第一個餐點。
             const currentDish = (activeData.menu || []).find(m => m.name === dish);
             if (!currentDish) {
                 showToast(`「${dish || '原選餐點'}」已被更新，請重新選擇主餐`);
@@ -1838,6 +1845,7 @@
             }
 
             isSubmittingOrder = true;
+
             const submitBtn = document.querySelector('#orderForm button[type="submit"]');
             const originalSubmitHtml = submitBtn ? submitBtn.innerHTML : '';
             if (submitBtn) {
@@ -1848,7 +1856,8 @@
 
             const newOrder = {
                 id: 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                name, dish, price, note, paid, _updatedAt: Date.now()
+                name, dish, price, note, paid,
+                _updatedAt: Date.now()
             };
 
             if (!activeData.orders) activeData.orders = [];
@@ -1875,6 +1884,7 @@
             saveLocalState();
             renderApp();
             requestAnimationFrame(() => syncStateToFirestore());
+
             showToast(isNewOrder ? "訂單已送出，正在同步…" : "訂單已更新，正在同步…");
 
             setTimeout(() => {
