@@ -1715,6 +1715,12 @@
             }
             if (!confirm(message)) return;
 
+            const password = prompt("請輸入通關密語");
+            if (password !== "lihan") {
+                alert("通關密語錯誤，無法刪除菜單！");
+                return;
+            }
+
             history.splice(index, 1);
             if (!appState._deletedMenuIds || typeof appState._deletedMenuIds !== 'object') appState._deletedMenuIds = {};
             appState._deletedMenuIds[id] = Date.now();
