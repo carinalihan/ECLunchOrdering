@@ -1357,9 +1357,10 @@
             activeData.collector = document.getElementById('inputEditDateCollector').value.trim() || activeData.collector;
             activeData.deadline = newDeadline;
 
-            // 改結單時間視為重新開放；若沒有改時間，則依勾選狀態決定。
-            const deadlineChanged = activeData.deadline !== oldDeadline;
-            activeData.isClosed = deadlineChanged ? false : wantsClosed;
+            // 修改結單時間「不等於」重新開放。
+            // 已結單的日期，只有取消「已結單」並通過通關密語才會重新開放；
+            // 單純修改結單時間，仍維持原本的結單狀態。
+            activeData.isClosed = oldClosed ? wantsClosed : false;
             touchDateMeta(activeData);
 
             closeEditCurrentDateModal();
