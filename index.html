@@ -264,7 +264,7 @@
             <!-- Action Bar -->
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
-                    <button id="addOrderBtn" onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
+                    <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
                         <i class="fa-solid fa-plus"></i> 新增訂單
                     </button>
                     <!-- View Menu Button if menu image exists -->
@@ -1014,17 +1014,6 @@
         window.renderApp = function() {
             const activeData = getActiveDateObj();
 
-            const addOrderBtn = document.getElementById('addOrderBtn');
-            if (addOrderBtn) {
-                if (activeData.isClosed) {
-                    addOrderBtn.className = "bg-slate-200 text-slate-500 font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm cursor-pointer";
-                    addOrderBtn.innerHTML = '<i class="fa-solid fa-lock"></i> 已結單';
-                } else {
-                    addOrderBtn.className = "bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm";
-                    addOrderBtn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增訂單';
-                }
-            }
-
             document.getElementById('headerTitle').innerText = "良興電商 午餐食刻！";
             document.getElementById('headerDeadline').innerText = activeData.isClosed
                 ? ((activeData.deadline || "") + "　已結單")
@@ -1141,8 +1130,6 @@
             document.getElementById('inputEditDateRestaurant').value = activeData.restaurant || '';
             document.getElementById('inputEditDateCollector').value = activeData.collector || '';
             document.getElementById('inputEditDateDeadline').value = activeData.deadline || '';
-            const closedInput = document.getElementById('inputEditDateClosed');
-            if (closedInput) closedInput.checked = !!activeData.isClosed;
             document.getElementById('inputEditDateClosed').checked = !!activeData.isClosed;
             document.getElementById('editCurrentDateModal').classList.remove('hidden');
         };
@@ -1154,19 +1141,33 @@
         window.handleEditCurrentDateSubmit = function(event) {
             event.preventDefault();
             const activeData = getActiveDateObj();
+            const oldClosed = !!activeData.isClosed;
             const oldDeadline = activeData.deadline || '';
+            const newDeadline = document.getElementById('inputEditDateDeadline').value.trim() || activeData.deadline;
+            const wantsClosed = document.getElementById('inputEditDateClosed').checked;
+
+            // 只有「已結單 → 取消已結單」需要通關密語。
+            if (oldClosed && !wantsClosed) {
+                const password = prompt("請輸入通關密語");
+                if (password !== "lihan") {
+                    showToast("通關密語錯誤，未重新開放訂單");
+                    return;
+                }
+            }
+
             activeData.name = document.getElementById('inputEditDateName').value.trim() || activeData.name;
             activeData.restaurant = document.getElementById('inputEditDateRestaurant').value.trim() || activeData.restaurant;
             activeData.collector = document.getElementById('inputEditDateCollector').value.trim() || activeData.collector;
-            activeData.deadline = document.getElementById('inputEditDateDeadline').value.trim() || activeData.deadline;
+            activeData.deadline = newDeadline;
+
+            // 改結單時間視為重新開放；若沒有改時間，則依勾選狀態決定。
             const deadlineChanged = activeData.deadline !== oldDeadline;
-            activeData.isClosed = deadlineChanged ? false : document.getElementById('inputEditDateClosed').checked;
+            activeData.isClosed = deadlineChanged ? false : wantsClosed;
             touchDateMeta(activeData);
 
             closeEditCurrentDateModal();
             saveLocalState();
             renderApp();
-            // 先讓瀏覽器把畫面更新完成，再在下一幀背景同步 Google Sheet，避免操作時閃一下。
             requestAnimationFrame(() => syncStateToFirestore());
             showToast("當日訂餐資訊已更新！");
         };
@@ -1683,7 +1684,6 @@
                 menuUrl: template ? (template.menuUrl || "") : "",
                 menuImageUrl: template ? (template.menuImageUrl || "") : "",
                 menuSourceId: template ? template.id : "",
-                isClosed: false,
                 menu: inheritedMenu,
                 orders: [],
                 isClosed: false,
