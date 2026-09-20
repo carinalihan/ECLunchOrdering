@@ -2147,6 +2147,13 @@
         window.deleteOrder = function(index) {
             const activeData = getActiveDateObj();
             const removed = activeData.orders[index];
+            if (!removed) return;
+
+            // 刪除訂單前，先顯示該筆訂單姓名，避免誤刪別人的訂單。
+            if (!confirm(`${removed.name || '這位同仁'}，確定要刪除此筆訂單嗎？`)) {
+                return;
+            }
+
             activeData.orders.splice(index, 1);
             if (removed && removed.id) {
                 if (!activeData._deletedOrderIds || typeof activeData._deletedOrderIds !== 'object') activeData._deletedOrderIds = {};
