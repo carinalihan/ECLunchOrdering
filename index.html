@@ -2091,7 +2091,16 @@
             closeModal();
             saveLocalState();
             renderApp();
-            requestAnimationFrame(() => syncOrderDirectly(appState.currentDateId, newOrder));
+            requestAnimationFrame(() => {
+                if (isNewOrder) {
+                    // 新增訂單走單筆 upsert，降低多人同時點餐時互相覆蓋的風險。
+                    syncOrderDirectly(appState.currentDateId, newOrder);
+                } else {
+                    // 編輯訂單改走完整狀態同步：相容尚未更新 100 人版 GAS 的環境，
+                    // 避免 upsertOrder 未被後端支援時，畫面更新後又被下一次 GET 洗回舊資料。
+                    syncStateToFirestore();
+                }
+            });
 
             showToast(isNewOrder ? "訂單已送出，正在同步…" : "訂單已更新，正在同步…");
 
