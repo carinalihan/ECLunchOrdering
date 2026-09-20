@@ -936,11 +936,26 @@
             await loadStateFromSheet();
 
             // 只在成功建立同步後輪詢。
-            // 若本機還有尚未被 Google Sheet 確認的版本，絕對不能用舊資料覆蓋本機。
+            // 平時每 8 秒同步一次；回到頁面/瀏覽器焦點時則立即同步，
+            // 避免 iPhone 背景分頁暫停 setInterval 後，使用者必須按 F5 才看到最新資料。
             if (syncTimer) clearInterval(syncTimer);
             syncTimer = setInterval(() => {
-                loadStateFromSheet();
+                if (document.visibilityState === 'visible') loadStateFromSheet();
             }, 8000);
+
+            let lastForegroundSyncAt = 0;
+            const refreshOnReturn = () => {
+                if (document.visibilityState !== 'visible') return;
+                const now = Date.now();
+                // 避免 visibilitychange / pageshow / focus 同時觸發造成重複請求。
+                if (now - lastForegroundSyncAt < 1000) return;
+                lastForegroundSyncAt = now;
+                loadStateFromSheet();
+            };
+
+            document.addEventListener('visibilitychange', refreshOnReturn);
+            window.addEventListener('pageshow', refreshOnReturn);
+            window.addEventListener('focus', refreshOnReturn);
         }
 
         function loadStateFromSheet() {
