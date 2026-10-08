@@ -1397,31 +1397,27 @@
             const recentIds = new Set(entries.filter(x => x.date.time >= weekStart.getTime()).map(x => x.id));
             tabs.replaceChildren();
             entries.filter(x => recentIds.has(x.id)).forEach(x => tabs.appendChild(lunchDateButton(x.id,x.obj)));
-            const older = entries.filter(x => !recentIds.has(x.id));
+            // 月份訂餐是完整日期索引，包含本週日期；僅新增入口，不複製訂單。
+            const monthly = entries;
             toggle.innerHTML = (lunchArchiveOpen ? '收合 <i class="fa-solid fa-chevron-up"></i>' : '展開 <i class="fa-solid fa-chevron-down"></i>');
             toggle.setAttribute('aria-expanded', String(lunchArchiveOpen));
             archive.classList.toggle('hidden', !lunchArchiveOpen);
             archive.replaceChildren();
             if (!lunchArchiveOpen) return;
-            if (!older.length) { archive.textContent = '目前沒有已收納的歷史日期'; archive.className = 'mt-2 text-xs text-slate-400'; return; }
+            if (!monthly.length) { archive.textContent = '目前沒有訂餐日期'; archive.className = 'mt-2 text-xs text-slate-400'; return; }
             archive.className = 'mt-2 space-y-2';
-            const years = [...new Set(older.map(x => x.date.year))].sort((a,b)=>b-a);
+            const years = [...new Set(monthly.map(x => x.date.year))].sort((a,b)=>b-a);
             if (!years.includes(lunchArchiveYear)) lunchArchiveYear = years[0];
             const yearSelect = document.createElement('select');
             yearSelect.className = 'w-full sm:w-auto border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-700';
             years.forEach(y => { const o=document.createElement('option'); o.value=y; o.textContent=y+' 年'; yearSelect.appendChild(o); });
             yearSelect.value = lunchArchiveYear;
             yearSelect.addEventListener('change', () => { lunchArchiveYear=Number(yearSelect.value); lunchArchiveMonth=null; renderLunchDateNavigation(); });
-            const months = [...new Set(older.filter(x=>x.date.year===lunchArchiveYear).map(x=>x.date.month))].sort((a,b)=>b-a);
-            // 預設選上個月份（有資料時），例如 10 月初優先顯示 9 月；否則選最新可用月份。
-            // 使用者手動選過的月份則保留，不因每次刷新介面而重置。
-            if (!months.includes(lunchArchiveMonth)) {
-                const previousMonth = new Date(weekStart.getFullYear(), weekStart.getMonth() - 1, 1);
-                lunchArchiveMonth = (lunchArchiveYear === previousMonth.getFullYear() && months.includes(previousMonth.getMonth() + 1))
-                    ? previousMonth.getMonth() + 1 : months[0];
-            }
+            const months = [...new Set(monthly.filter(x=>x.date.year===lunchArchiveYear).map(x=>x.date.month))].sort((a,b)=>b-a);
+            // 預設選擇最新有訂餐日期的月份；使用者手動選取後不因同步刷新重設。
+            if (!months.includes(lunchArchiveMonth)) lunchArchiveMonth = months[0];
             const monthSelect = document.createElement('select');
-            monthSelect.setAttribute('aria-label', '選擇歷史訂餐月份');
+            monthSelect.setAttribute('aria-label', '選擇訂餐月份');
             monthSelect.className = 'w-full sm:w-auto min-w-[105px] border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-700';
             months.forEach(m => { const o=document.createElement('option'); o.value=m; o.textContent=m+' 月'; monthSelect.appendChild(o); });
             monthSelect.value = String(lunchArchiveMonth);
@@ -1433,7 +1429,7 @@
             // 年份與月份固定佔一列，歷史日期顯示於下方。
             archive.appendChild(filterRow);
             const dayWrap=document.createElement('div'); dayWrap.className='flex flex-wrap gap-2 pt-1';
-            older.filter(x=>x.date.year===lunchArchiveYear&&x.date.month===lunchArchiveMonth)
+            monthly.filter(x=>x.date.year===lunchArchiveYear&&x.date.month===lunchArchiveMonth)
                 .forEach(x=>dayWrap.appendChild(lunchDateButton(x.id,x.obj)));
             archive.appendChild(dayWrap);
         }
