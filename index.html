@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
+    <meta name="eclunch-build" content="2026-10-08-v3-blue-auto-02">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -307,6 +308,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
   }
 }
 </style>
+
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
@@ -2650,5 +2652,103 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             }
         };
     </script>
+
+
+<!-- 網站靜默更新：只替換舊版提醒程式，不碰訂餐與 Google Apps Script -->
+<script id="eclunch-version-update-script">
+(function () {
+  'use strict';
+  const currentBuild = document.querySelector('meta[name="eclunch-build"]')?.content || '';
+  if (!currentBuild || location.protocol === 'file:') return;
+
+  const VERSION_CHECK_MS = 5 * 60 * 1000;
+  const WAIT_FOR_IDLE_MS = 15 * 1000;
+  const RETRY_AFTER_STALE_DEPLOY_MS = 2 * 60 * 1000;
+  const modalIds = [
+    'orderModal', 'editMenuModal', 'editCurrentDateModal', 'newDateModal',
+    'menuLibraryModal', 'menuMasterEditModal', 'unpaidModal', 'lunchHistoryModal'
+  ];
+  let checking = false;
+  let lastCheckAt = 0;
+  let lastInteractionAt = Date.now();
+  let pendingBuild = '';
+
+  // 保護同事正在填寫的表單：只在沒有操作、沒有資料待同步時更新。
+  ['pointerdown', 'keydown', 'input', 'change'].forEach(type => {
+    document.addEventListener(type, () => { lastInteractionAt = Date.now(); }, { passive: true, capture: true });
+  });
+
+  function isSafeToRefresh() {
+    if (document.visibilityState === 'hidden') return false;
+    if (Date.now() - lastInteractionAt < WAIT_FOR_IDLE_MS) return false;
+    if (modalIds.some(id => {
+      const modal = document.getElementById(id);
+      return modal && !modal.classList.contains('hidden') && getComputedStyle(modal).display !== 'none';
+    })) return false;
+
+    const active = document.activeElement;
+    if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return false;
+    try {
+      if (typeof isSubmittingOrder !== 'undefined' && isSubmittingOrder) return false;
+      if (typeof isSaving !== 'undefined' && isSaving) return false;
+      if (typeof pendingExpectedServerVersion !== 'undefined' && pendingExpectedServerVersion > 0) return false;
+      if (typeof pendingDirectOrders !== 'undefined' && Object.keys(pendingDirectOrders).length > 0) return false;
+    } catch (error) {
+      return false;
+    }
+    return true;
+  }
+
+  function refreshIfSafe() {
+    if (!pendingBuild || !isSafeToRefresh()) return;
+    // GitHub Pages 部署可能有短暫 CDN 延遲，避免舊頁面無限重新整理。
+    const sessionKey = 'eclunch-update-tried-' + pendingBuild;
+    try {
+      const lastReload = Number(sessionStorage.getItem(sessionKey) || 0);
+      if (Date.now() - lastReload < RETRY_AFTER_STALE_DEPLOY_MS) return;
+      sessionStorage.setItem(sessionKey, String(Date.now()));
+    } catch (e) { /* sessionStorage 不可用時照常更新 */ }
+
+    const newUrl = new URL('index.html', document.baseURI);
+    newUrl.searchParams.set('app_version', pendingBuild);
+    newUrl.searchParams.set('_', String(Date.now()));
+    window.location.replace(newUrl.toString());
+  }
+
+  async function checkForNewVersion() {
+    if (checking || document.visibilityState === 'hidden') return;
+    const now = Date.now();
+    if (now - lastCheckAt < 30 * 1000) { refreshIfSafe(); return; }
+    lastCheckAt = now;
+    checking = true;
+    try {
+      const versionUrl = new URL('version.json', document.baseURI);
+      versionUrl.searchParams.set('_', String(now));
+      const response = await fetch(versionUrl.toString(), {
+        cache: 'no-store', credentials: 'same-origin'
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const latestBuild = typeof data.version === 'string' ? data.version.trim() : '';
+      if (!/^[a-zA-Z0-9._-]{5,100}$/.test(latestBuild)) return;
+      pendingBuild = latestBuild === currentBuild ? '' : latestBuild;
+      refreshIfSafe();
+    } catch (error) {
+      // 斷線時沿用目前頁面，不顯示提示、不干擾訂餐。
+      console.debug('網站版本檢查未完成：', error);
+    } finally {
+      checking = false;
+    }
+  }
+
+  checkForNewVersion();
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') checkForNewVersion();
+  });
+  window.addEventListener('focus', checkForNewVersion);
+  window.setInterval(checkForNewVersion, VERSION_CHECK_MS);
+  window.setInterval(refreshIfSafe, 5000);
+})();
+</script>
 </body>
 </html>
