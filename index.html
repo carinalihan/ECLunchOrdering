@@ -255,15 +255,20 @@
     </header>
 
     <div class="bg-white border-b border-slate-200 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between overflow-x-auto py-2.5 gap-2">
-            <div id="dateTabsContainer" class="flex items-center gap-2 overflow-x-auto py-1">
-                <!-- Populated dynamically -->
-            </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-                <button onclick="openNewDateModal()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm border border-blue-200 transition flex items-center gap-1">
-                    <i class="fa-solid fa-calendar-plus"></i> 新增日期
-                </button>
-            </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row gap-4 lg:gap-6">
+            <section class="min-w-0 flex-1">
+                <!-- 本周訂餐與日期按鈕在桌機同一行；窄螢幕保留易點選的換行空間 -->
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 min-w-0">
+                    <h2 class="shrink-0 whitespace-nowrap font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-calendar-days text-blue-600 mr-2"></i>本周訂餐</h2>
+                    <div id="dateTabsContainer" class="order-3 sm:order-none flex items-center gap-2 overflow-x-auto py-1 min-w-0 w-full sm:w-auto sm:flex-1"></div>
+                    <button onclick="openNewDateModal()" class="shrink-0 ml-auto bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm border border-blue-200 transition"><i class="fa-solid fa-calendar-plus"></i> 新增日期</button>
+                </div>
+            </section>
+            <section class="min-w-0 lg:w-[40%] lg:border-l lg:border-slate-200 lg:pl-5">
+                <div class="flex items-center justify-between min-h-[40px] gap-3"><h2 class="shrink-0 whitespace-nowrap font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-folder text-blue-700 mr-2"></i>歷史訂餐</h2>
+                <button type="button" id="archiveToggle" onclick="toggleLunchArchive()" aria-expanded="false" aria-controls="archiveMonths" class="shrink-0 text-xs font-semibold text-slate-600 hover:text-blue-700">展開 <i class="fa-solid fa-chevron-down"></i></button></div>
+                <div id="archiveMonths" class="hidden mt-2"></div>
+            </section>
         </div>
     </div>
 
@@ -1258,22 +1263,7 @@
                 viewMenuBtn.classList.add('hidden');
             }
 
-            const tabsContainer = document.getElementById('dateTabsContainer');
-            tabsContainer.innerHTML = '';
-            for (const [dateId, dateObj] of Object.entries(appState.dates)) {
-                const isActive = dateId === appState.currentDateId;
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = isActive 
-                    ? "px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-semibold text-sm shadow-sm transition flex items-center gap-1.5 flex-shrink-0"
-                    : "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition flex items-center gap-1.5 flex-shrink-0 cursor-pointer";
-                btn.innerHTML = `
-                    <i class="fa-regular fa-calendar text-xs ${isActive ? 'text-blue-100' : 'text-slate-400'}"></i>
-                    <span>${escapeHtml(dateObj.name)}</span>
-                `;
-                btn.addEventListener('click', () => switchDate(dateId));
-                tabsContainer.appendChild(btn);
-            }
+            renderLunchDateNavigation();
 
             const selectEl = document.getElementById('inputDish');
             const orderModal = document.getElementById('orderModal');
@@ -1360,6 +1350,93 @@
                 }
             }
         };
+
+        // V3 僅整理日期導覽；訂單、付款、結單與同步資料完全不變。
+        let lunchArchiveOpen = false;
+        let lunchArchiveYear = null;
+        let lunchArchiveMonth = null;
+        function lunchDateValue(dateId, obj) {
+            const name = String(obj.name || '');
+            const match = name.match(/(?:(20\d{2})[\/.-])?(\d{1,2})[\/.-](\d{1,2})/);
+            const created = Number(String(dateId).match(/^date_(\d{13})$/)?.[1] || 0);
+            const base = created ? new Date(created) : new Date();
+            if (!match) return { time: created || 0, year: base.getFullYear(), month: base.getMonth() + 1 };
+            let year = match[1] ? Number(match[1]) : base.getFullYear();
+            const month = Number(match[2]), day = Number(match[3]);
+            if (!match[1] && created) {
+                const candidate = new Date(year, month - 1, day);
+                if (candidate.getTime() - created > 180 * 86400000) year--;
+                else if (created - candidate.getTime() > 180 * 86400000) year++;
+            }
+            return { time: new Date(year, month - 1, day).getTime(), year, month };
+        }
+        function lunchDateButton(dateId, obj) {
+            const active = dateId === appState.currentDateId;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = active
+                ? 'px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-semibold text-sm shadow-sm flex items-center gap-1.5 flex-shrink-0'
+                : 'px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm flex items-center gap-1.5 flex-shrink-0';
+            btn.innerHTML = '<i class="fa-regular fa-calendar text-xs"></i><span>' + escapeHtml(obj.name || '') + '</span>';
+            btn.addEventListener('click', () => switchDate(dateId));
+            return btn;
+        }
+        window.toggleLunchArchive = function() { lunchArchiveOpen = !lunchArchiveOpen; renderLunchDateNavigation(); };
+        function renderLunchDateNavigation() {
+            const tabs = document.getElementById('dateTabsContainer');
+            const archive = document.getElementById('archiveMonths');
+            const toggle = document.getElementById('archiveToggle');
+            if (!tabs || !archive) return;
+            const entries = Object.entries(appState.dates || {}).map(([id, obj]) => ({id, obj, date: lunchDateValue(id, obj)}))
+                .sort((a,b) => b.date.time - a.date.time);
+            // 依本機日期計算本週週一 00:00；本週及未來留在首頁，之前一律歸入歷史。
+            // 分類僅影響畫面，不修改訂單或結單狀態。
+            const today = new Date();
+            const weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+            const recentIds = new Set(entries.filter(x => x.date.time >= weekStart.getTime()).map(x => x.id));
+            tabs.replaceChildren();
+            entries.filter(x => recentIds.has(x.id)).forEach(x => tabs.appendChild(lunchDateButton(x.id,x.obj)));
+            const older = entries.filter(x => !recentIds.has(x.id));
+            toggle.innerHTML = (lunchArchiveOpen ? '收合 <i class="fa-solid fa-chevron-up"></i>' : '展開 <i class="fa-solid fa-chevron-down"></i>');
+            toggle.setAttribute('aria-expanded', String(lunchArchiveOpen));
+            archive.classList.toggle('hidden', !lunchArchiveOpen);
+            archive.replaceChildren();
+            if (!lunchArchiveOpen) return;
+            if (!older.length) { archive.textContent = '目前沒有已收納的歷史日期'; archive.className = 'mt-2 text-xs text-slate-400'; return; }
+            archive.className = 'mt-2 space-y-2';
+            const years = [...new Set(older.map(x => x.date.year))].sort((a,b)=>b-a);
+            if (!years.includes(lunchArchiveYear)) lunchArchiveYear = years[0];
+            const yearSelect = document.createElement('select');
+            yearSelect.className = 'w-full sm:w-auto border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-700';
+            years.forEach(y => { const o=document.createElement('option'); o.value=y; o.textContent=y+' 年'; yearSelect.appendChild(o); });
+            yearSelect.value = lunchArchiveYear;
+            yearSelect.addEventListener('change', () => { lunchArchiveYear=Number(yearSelect.value); lunchArchiveMonth=null; renderLunchDateNavigation(); });
+            const months = [...new Set(older.filter(x=>x.date.year===lunchArchiveYear).map(x=>x.date.month))].sort((a,b)=>b-a);
+            // 預設選上個月份（有資料時），例如 10 月初優先顯示 9 月；否則選最新可用月份。
+            // 使用者手動選過的月份則保留，不因每次刷新介面而重置。
+            if (!months.includes(lunchArchiveMonth)) {
+                const previousMonth = new Date(weekStart.getFullYear(), weekStart.getMonth() - 1, 1);
+                lunchArchiveMonth = (lunchArchiveYear === previousMonth.getFullYear() && months.includes(previousMonth.getMonth() + 1))
+                    ? previousMonth.getMonth() + 1 : months[0];
+            }
+            const monthSelect = document.createElement('select');
+            monthSelect.setAttribute('aria-label', '選擇歷史訂餐月份');
+            monthSelect.className = 'w-full sm:w-auto min-w-[105px] border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-700';
+            months.forEach(m => { const o=document.createElement('option'); o.value=m; o.textContent=m+' 月'; monthSelect.appendChild(o); });
+            monthSelect.value = String(lunchArchiveMonth);
+            monthSelect.addEventListener('change', () => { lunchArchiveMonth=Number(monthSelect.value); renderLunchDateNavigation(); });
+            const filterRow = document.createElement('div');
+            filterRow.className = 'flex flex-wrap gap-2 items-center';
+            filterRow.appendChild(yearSelect);
+            filterRow.appendChild(monthSelect);
+            // 年份與月份固定佔一列，歷史日期顯示於下方。
+            archive.appendChild(filterRow);
+            const dayWrap=document.createElement('div'); dayWrap.className='flex flex-wrap gap-2 pt-1';
+            older.filter(x=>x.date.year===lunchArchiveYear&&x.date.month===lunchArchiveMonth)
+                .forEach(x=>dayWrap.appendChild(lunchDateButton(x.id,x.obj)));
+            archive.appendChild(dayWrap);
+        }
 
         window.switchDate = function(dateId) {
             if (!appState.dates || !appState.dates[dateId]) return;
