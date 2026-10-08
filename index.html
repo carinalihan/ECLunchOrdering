@@ -210,6 +210,91 @@
   header .relative.max-w-7xl > .header-history-btn { width:100%; justify-content:center; position:relative; z-index:10; }
 }
 </style>
+
+<!-- V3 原版功能及排版完全保留；以下僅為色彩主題覆蓋，不更動 DOM 或 JavaScript -->
+<style id="v3-blue-premium-colors-only">
+/* 品牌藍 × 清亮天空藍 × 溫暖橘點綴。只設定色彩相關屬性。 */
+body.bg-slate-50 { background-color: #f5f9ff; color: #203656; }
+header.relative.overflow-hidden {
+  background: linear-gradient(108deg, #125bdc 0%, #237df2 48%, #60b6fa 100%);
+  border-color: #b6d9ff;
+}
+header #headerTitle { color: #ffffff; }
+header #headerTitle + p { color: #e7f4ff; }
+header .absolute.inset-0 > div:nth-child(1) { background: rgba(201,236,255,.20); }
+header .absolute.inset-0 > div:nth-child(2) { background: rgba(255,255,255,.16); }
+header .absolute.inset-0 > div:nth-child(3) { background: rgba(255,255,255,.12); }
+header .fa-utensils { color: #ffffff; }
+header .bg-gradient-to-br { background: linear-gradient(145deg, #0b4eca 0%, #00a9f0 100%); }
+header .backdrop-blur-sm { background-color: rgba(255,255,255,.94); border-color: #d8eaff; }
+header .header-history-btn { background-color: #0a4fcf; border-color: #0a4fcf; color: #ffffff; }
+header .header-history-btn:hover { background-color: #073da7; border-color: #073da7; }
+header .fa-store { color: #1164db; }
+header .fa-wallet, header .fa-clock { color: #f48129; }
+
+/* 日期區：沿用所有既有位置、收合和排序 */
+header + div.bg-white { background-color: #ffffff; border-color: #dceaff; }
+header + div .fa-calendar-days { color: #1373ed; }
+header + div .fa-folder { color: #1767d8; }
+header + div #archiveToggle { color: #24568c; }
+header + div #archiveToggle:hover { color: #0f64d8; }
+header + div section.lg\:border-l { border-color: #d6e8fd; }
+#dateTabsContainer button.bg-blue-600,
+#archiveMonths button.bg-blue-600 { background: linear-gradient(125deg, #1475f4, #0757d8); color: #ffffff; }
+#dateTabsContainer button.bg-slate-100,
+#archiveMonths button.bg-slate-100 { background-color: #edf5ff; color: #35547b; }
+#dateTabsContainer button.bg-slate-100:hover,
+#archiveMonths button.bg-slate-100:hover { background-color: #dcecff; }
+#archiveMonths select { background-color: #ffffff; border-color: #bfdbfa; color: #294b77; }
+#archiveMonths select:focus { outline-color: #2d88f5; border-color: #2d88f5; }
+header + div button.bg-blue-50 { background-color: #eaf4ff; color: #145bc1; border-color: #b8d9ff; }
+header + div button.bg-blue-50:hover { background-color: #dcecff; }
+
+/* 卡片：細緻的藍白層次，不碰任何尺寸、間距、圓角或陰影設定 */
+main > div > div.bg-white { background-color: #ffffff; border-color: #d5e6fc; }
+main .mobile-order-table thead tr { background-color: #e8f2ff; color: #2b4e80; border-color: #d4e6fa; }
+main #ordersTableBody { color: #233a5a; }
+main #ordersTableBody tr { border-color: #e4eefb; }
+main #ordersTableBody tr:hover { background-color: #f3f8ff; }
+main #breakdownTableBody tr { border-color: #e6effb; }
+main #breakdownTableBody td { color: #2c4569; }
+
+/* 強調色：品牌藍動作、薄荷綠菜單；已付款恢復藍色勾選框，未付款維持玫瑰紅提醒 */
+main button.bg-blue-600,
+button.bg-blue-600 { background-color: #126cf0; border-color: #126cf0; color: #ffffff; }
+main button.bg-blue-600:hover,
+button.bg-blue-600:hover { background-color: #0756c8; border-color: #0756c8; }
+#viewMenuBtn { background-color: #e8faf3; border-color: #a6ecd0; color: #087f62; }
+#viewMenuBtn:hover { background-color: #d7f5e9; }
+.paid-check { accent-color: #2563eb; }
+.paid-check:checked { accent-color: #2563eb; }
+#inputPaid { accent-color: #2563eb; }
+#unpaidCard { background-color: #fff1f3; border-color: #ffcbd4; }
+#unpaidCard .text-rose-900 { color: #ad2446; }
+#unpaidCard .text-rose-800,
+#unpaidCard .text-rose-700 { color: #c42c50; }
+#unpaidCard .text-rose-500 { color: #f44768; }
+#unpaidCard #unpaidViewBtn { background-color: #ffffff; border-color: #f4b9c6; color: #b52e50; }
+#unpaidCard #unpaidViewBtn:hover { background-color: #ffe7ed; }
+
+/* 右側總金額：保留原卡片結構，改用亮藍漸層 */
+main > div:nth-child(2) > div:first-child {
+  background: linear-gradient(128deg, #0876f7 0%, #1259dd 52%, #3a35c9 100%);
+  color: #ffffff;
+  border-color: #2466e6;
+}
+main > div:nth-child(2) > div:first-child .text-blue-100 { color: #e7efff; }
+main > div:nth-child(2) > div:first-child .bg-white\/15 {
+  background-color: rgba(255,255,255,.17);
+  border-color: rgba(255,255,255,.29);
+}
+main .fa-chart-pie { color: #1479f5; }
+main button.bg-blue-50 { background-color: #eaf3ff; border-color: #d0e4ff; color: #145ec4; }
+main button.bg-blue-50:hover { background-color: #dcecff; }
+
+/* 表單只改焦點顏色；既有新增、編輯、結單和同步行為不變 */
+input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
+</style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
