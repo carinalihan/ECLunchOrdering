@@ -295,6 +295,18 @@ main button.bg-blue-50:hover { background-color: #dcecff; }
 /* 表單只改焦點顏色；既有新增、編輯、結單和同步行為不變 */
 input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
 </style>
+
+<!-- 手機版：提高「我的午餐履歷」按鈕與藍色頁首的對比；其餘功能、排版不變 -->
+<style id="mobile-history-button-contrast-fix">
+@media (max-width: 639px) {
+  header .header-history-btn,
+  header .header-history-btn:hover {
+    background-color: #ffffff;
+    color: #1455bb;
+    border-color: #c5defd;
+  }
+}
+</style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
