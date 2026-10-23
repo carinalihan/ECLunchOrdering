@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
-    <meta name="eclunch-build" content="2026-10-08-v3-blue-auto-02">
+    <meta name="eclunch-build" content="2026-10-23-v3-reminder-03">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -445,7 +445,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                 </div>
                 <div class="mt-3 flex items-center justify-between gap-2">
                     <span id="unpaidAmount" class="text-xs text-rose-700">未付款 $0</span>
-                    <button type="button" onclick="copyUnpaidList()" id="unpaidCopyBtn" class="text-xs font-semibold text-rose-700 hover:text-rose-900">複製未付款名單</button>
+                    <button type="button" onclick="openReminderModal()" id="reminderOpenBtn" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition"><i class="fa-regular fa-envelope mr-1"></i>催繳通知</button>
                 </div>
             </div>
 
@@ -510,6 +510,14 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         </div>
 
     </main>
+
+    <!-- 頁尾製作團隊與本次版本時間；不影響訂餐資料或版型 -->
+    <footer id="eclunchFooter" class="max-w-7xl w-full mx-auto px-4 sm:px-6 pb-5 pt-1 text-center" aria-label="網站版本資訊">
+        <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-slate-500">
+            <p class="text-xs font-semibold tracking-wide">Designed by E-Commerce Team</p>
+            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/23 11:27</p>
+        </div>
+    </footer>
 
     <!-- Order Modal -->
     <div id="orderModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -758,13 +766,54 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             <div class="p-5">
                 <div id="unpaidList" class="space-y-2 max-h-[55vh] overflow-y-auto"></div>
                 <div class="flex gap-2 mt-4">
-                    <button type="button" onclick="copyUnpaidList()" class="flex-1 px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold">複製名單</button>
+                    
                     <button type="button" onclick="closeUnpaidModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium">關閉</button>
                 </div>
             </div>
         </div>
     </div>
 
+
+    <!-- 歷史催繳通知：獨立視窗，不變更既有訂單流程 -->
+    <div id="reminderModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[70] flex items-center justify-center p-3 sm:p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="reminderModalTitle">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-start justify-between gap-3">
+                <div>
+                    <h3 id="reminderModalTitle" class="text-lg font-bold text-slate-800"><i class="fa-regular fa-envelope text-rose-500 mr-2"></i>歷史未付款催繳通知</h3>
+                    <p class="text-xs text-slate-500 mt-1">請先選擇一筆訂單，再確認收件人及內容；寄送後不會自動改成已付款。</p>
+                </div>
+                <button type="button" onclick="closeReminderModal()" aria-label="關閉" class="p-2 text-slate-500 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <section class="min-w-0">
+                    <div class="font-bold text-sm text-slate-700 mb-2">所有未付款訂單 <span id="reminderOrderCount" class="text-xs font-normal text-slate-500"></span></div>
+                    <div id="reminderOrderList" class="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-[42vh] overflow-y-auto"></div>
+                </section>
+                <form id="reminderSendForm" class="space-y-3 min-w-0" onsubmit="sendPaymentReminder(event)">
+                    <div class="font-bold text-sm text-slate-700">信件內容（寄送前可編輯）</div>
+                    <label class="block text-xs font-semibold text-slate-600">收件人 Email（手動輸入）
+                        <input id="reminderEmail" type="email" autocomplete="off" required maxlength="254" placeholder="請輸入對方的 Email" class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500">
+                    </label>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">信件主旨</label>
+                        <input id="reminderSubject" type="text" required maxlength="200" autocomplete="off" placeholder="請先選擇訂單" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:ring-blue-200 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">信件內容</label>
+                        <textarea id="reminderBody" required maxlength="4000" rows="7" placeholder="請先選擇訂單" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm leading-6 text-slate-700 resize-y focus:ring-2 focus:ring-blue-200 focus:border-blue-500"></textarea>
+                    </div>
+                    <label class="block text-xs font-semibold text-slate-600">寄送通關密語
+                        <input id="reminderPassphrase" type="password" required autocomplete="off" placeholder="寄出前輸入通關密語" class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500">
+                    </label>
+                    <div id="reminderSendStatus" role="status" aria-live="polite" class="text-xs text-slate-600 min-h-[18px]"></div>
+                    <div class="flex gap-2">
+                        <button id="reminderCloseBtn" type="button" onclick="closeReminderModal()" class="shrink-0 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-semibold text-sm">關閉</button>
+                        <button id="reminderSendBtn" type="submit" class="flex-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed">確認寄送</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- 我的午餐履歷 Modal -->
     <div id="lunchHistoryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
@@ -877,6 +926,15 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         const pendingDirectOrders = {};
         const LOCAL_STATE_KEY = "eclunchordering_state_v3";
         const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
+        // 本次開啟頁面先選最新開團日期；當頁切換仍記住，不因 8 秒輪詢跳回。
+        let chooseLatestOnceFromServer = true;
+        function getNewestLunchDateId(state) {
+            const ids = Object.keys((state && state.dates) || {});
+            if (!ids.length) return null;
+            ids.sort((a, b) => lunchDateValue(b, state.dates[b]).time - lunchDateValue(a, state.dates[a]).time);
+            return ids[0];
+        }
+
         // 圖片獨立備份：即使遠端回傳的完整 state 暫時沒有圖片，也能從本機還原。
         const LOCAL_IMAGE_BACKUP_KEY = "eclunchordering_image_backup_v1";
 
@@ -932,8 +990,13 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                     pendingExpectedServerVersion = 0;
                     isSaving = false;
                     try {
-                        const selected = localStorage.getItem(LOCAL_SELECTED_DATE_KEY);
-                        if (selected && appState.dates[selected]) appState.currentDateId = selected;
+                        if (chooseLatestOnceFromServer) {
+                            const newestId = getNewestLunchDateId(appState);
+                            if (newestId) appState.currentDateId = newestId;
+                        } else {
+                            const selected = localStorage.getItem(LOCAL_SELECTED_DATE_KEY);
+                            if (selected && appState.dates[selected]) appState.currentDateId = selected;
+                        }
                     } catch (e) {}
                     return true;
                 }
@@ -1154,7 +1217,14 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
 
                         lastServerState = cloneStateForSync(incoming);
                         appState = incoming;
-                        if (selectedDateId && appState.dates && appState.dates[selectedDateId]) {
+                        if (chooseLatestOnceFromServer) {
+                            const newestId = getNewestLunchDateId(appState);
+                            if (newestId) {
+                                appState.currentDateId = newestId;
+                                try { localStorage.setItem(LOCAL_SELECTED_DATE_KEY, newestId); } catch (e) {}
+                            }
+                            chooseLatestOnceFromServer = false;
+                        } else if (selectedDateId && appState.dates && appState.dates[selectedDateId]) {
                             appState.currentDateId = selectedDateId;
                         }
                         saveLocalState();
@@ -2370,6 +2440,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                 const qty = counts[dish];
                 const price = prices[dish] || 0;
                 lines.push(`${i+1}. ${dish} × ${qty} = $${qty * price}`);
+                // 同一道主餐可能有不同備註：逐筆附姓名，讓團長不會分錯便當。
+                orders.filter(o => String(o.dish || '未填寫餐點') === dish && String(o.note || '').trim())
+                    .forEach(o => lines.push(`   備註｜${String(o.name || '未填姓名')}：${String(o.note).trim().replace(/\s*\n\s*/g, '／')}`));
             });
             lines.push('', `共 ${orders.length} 份`, `總金額 $${total}`);
             return lines.join('\n');
@@ -2436,6 +2509,197 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             if (modal) modal.classList.add('hidden');
         }
 
+        // ====== 歷史未付款催繳（不寫入訂單 state）======
+        let reminderSelected = null;
+        let reminderSending = false;
+        let reminderActiveRequestId = '';
+        let reminderSendPhase = 'idle'; // checking：只檢查後端；submitted：已送出不可取消
+        let reminderCheckCancelled = false;
+        let reminderNeedsReview = false;
+        function reminderDateText(dateId, dateObj) {
+            const name = String((dateObj && dateObj.name) || '');
+            const m = name.match(/(\d{1,2})[\/.](\d{1,2})/);
+            if (m) return `${Number(m[1])}/${Number(m[2])}`;
+            const d = parseLunchHistoryDate(dateId);
+            return d ? `${d.getMonth()+1}/${d.getDate()}` : name || String(dateId);
+        }
+        function getAllUnpaidReminders() {
+            const entries = [];
+            Object.entries(appState.dates || {}).forEach(([dateId, dateObj]) => {
+                (dateObj.orders || []).forEach((o, index) => {
+                    if (o && !o.paid) entries.push({
+                        dateId, orderId: o.id, order: o, index,
+                        dateObj, time: lunchDateValue(dateId, dateObj).time,
+                        dateLabel: reminderDateText(dateId, dateObj)
+                    });
+                });
+            });
+            entries.sort((a, b) => b.time - a.time || b.index - a.index);
+            return entries;
+        }
+        window.openReminderModal = function () {
+            // 寄送查詢進行中允許重新開啟，不清掉原本的收件人與狀態。
+            if (reminderSending) {
+                document.getElementById('reminderModal').classList.remove('hidden');
+                return;
+            }
+            reminderSelected = null;
+            reminderNeedsReview = false;
+            document.getElementById('reminderSendBtn').disabled = false;
+            document.getElementById('reminderEmail').value = '';
+            document.getElementById('reminderPassphrase').value = '';
+            document.getElementById('reminderSendStatus').textContent = '';
+            const list = document.getElementById('reminderOrderList');
+            const records = getAllUnpaidReminders();
+            document.getElementById('reminderOrderCount').textContent = `共 ${records.length} 筆`;
+            list.replaceChildren();
+            if (!records.length) {
+                list.textContent = '目前沒有未付款訂單 🎉';
+                list.classList.add('p-4','text-sm','text-slate-500');
+            } else {
+                list.classList.remove('p-4','text-sm','text-slate-500');
+                records.forEach((rec, i) => {
+                    const label = document.createElement('label');
+                    label.className = 'flex gap-3 items-start p-3 hover:bg-rose-50 cursor-pointer text-sm';
+                    const radio = document.createElement('input');
+                    radio.type = 'radio'; radio.name = 'reminderOrder'; radio.className = 'mt-1 accent-rose-600';
+                    radio.value = String(i);
+                    const info = document.createElement('div'); info.className = 'flex-1 min-w-0';
+                    const heading = document.createElement('div'); heading.className = 'font-semibold text-slate-800';
+                    heading.textContent = `${rec.dateLabel}｜${rec.order.name || '未填姓名'}｜$${Number(rec.order.price) || 0}`;
+                    const subtitle = document.createElement('div'); subtitle.className = 'text-xs text-slate-500 mt-1 break-words';
+                    subtitle.textContent = `${rec.order.dish || '未填寫餐點'}${rec.order.note ? '｜' + rec.order.note : ''}`;
+                    info.append(heading,subtitle); label.append(radio,info);
+                    radio.addEventListener('change',()=>{
+                        reminderSelected = { dateId:rec.dateId, orderId:rec.orderId, dateLabel:rec.dateLabel,
+                            name:String(rec.order.name||'未填姓名'), price:Number(rec.order.price)||0 };
+                        document.getElementById('reminderSubject').value = `【良興電商午餐食刻】${rec.dateLabel} 午餐付款提醒`;
+                        document.getElementById('reminderBody').value =
+                            `Hi ${reminderSelected.name}，\n\n提醒您 ${rec.dateLabel} 的午餐費用 $${reminderSelected.price} 尚未完成付款\n請撥空確認繳費給團長，謝謝！\n\n良興電商 午餐食刻！`;
+                        document.getElementById('reminderSendStatus').textContent = '';
+                    });
+                    list.appendChild(label);
+                });
+            }
+            document.getElementById('reminderSubject').value = '';
+            document.getElementById('reminderBody').value = '';
+            document.getElementById('reminderModal').classList.remove('hidden');
+        };
+        window.closeReminderModal = function () {
+            // 檢查後端期間可取消；真正 POST 已送出時，關閉僅影響畫面，不會撤銷寄信。
+            if (reminderSending && reminderSendPhase === 'checking') {
+                reminderCheckCancelled = true;
+                showToast('已關閉催繳視窗，尚未發送郵件');
+            } else if (reminderSending && reminderSendPhase === 'submitted') {
+                showToast('視窗已關閉，寄送結果仍在背景確認，請勿重複寄送');
+            }
+            document.getElementById('reminderModal').classList.add('hidden');
+            document.getElementById('reminderPassphrase').value = '';
+        };
+        function reminderGetStatus(requestId, timeoutMs=4500) {
+            // GET 只查詢隨機請求代碼的寄送結果；通關密語／Email 絕不放在 URL。
+            return new Promise((resolve,reject) => {
+                const fn = '__reminderStatus_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+                const tag = document.createElement('script'); let done=false;
+                const clean=()=>{if(done)return;done=true;clearTimeout(timer);delete window[fn];tag.remove();};
+                const timer=setTimeout(()=>{clean();reject(new Error('查詢逾時'));},timeoutMs);
+                window[fn]=(value)=>{clean();resolve(value);};
+                tag.onerror=()=>{clean();reject(new Error('無法取得寄送狀態'));};
+                tag.src=GOOGLE_APPS_SCRIPT_URL+'?action=reminderStatus&requestId='+encodeURIComponent(requestId)+'&callback='+encodeURIComponent(fn)+'&t='+Date.now();
+                document.head.appendChild(tag);
+            });
+        }
+        window.sendPaymentReminder = async function (event) {
+            event.preventDefault();
+            if (reminderSending) return;
+            const status = document.getElementById('reminderSendStatus');
+            if (!reminderSelected) { status.textContent='請先從左側選擇一筆未付款訂單'; return; }
+            const email = document.getElementById('reminderEmail').value.trim();
+            const passphrase = document.getElementById('reminderPassphrase').value;
+            const subject = document.getElementById('reminderSubject').value.trim();
+            const body = document.getElementById('reminderBody').value.trim();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { status.textContent='請輸入正確的 Email';return; }
+            if (!subject || subject.length > 200 || /[\r\n]/.test(subject)) { status.textContent='請輸入有效的信件主旨（不可換行）';return; }
+            if (!body || body.length > 4000) { status.textContent='請輸入信件內容（最多 4000 字）';return; }
+            if (!passphrase) { status.textContent='請輸入通關密語';return; }
+            if (!confirm(`確定寄送以下編輯後的郵件給 ${email}？\n${reminderSelected.dateLabel}｜${reminderSelected.name}｜$${reminderSelected.price}\n\n主旨：${subject}\n\n內容：\n${body}`)) return;
+            if (!window.crypto || !crypto.getRandomValues) { status.textContent='此瀏覽器不支援安全寄送，請更新瀏覽器'; return; }
+
+            // 先確認新版 Apps Script 的寄信模組已部署，避免在本機預覽誤送到舊版後端。
+            const rand = new Uint8Array(20); crypto.getRandomValues(rand);
+            const requestId = [...rand].map(x=>x.toString(16).padStart(2,'0')).join('');
+            reminderActiveRequestId = requestId;
+            reminderSending = true;
+            reminderSendPhase = 'checking';
+            reminderCheckCancelled = false;
+            const sendBtn = document.getElementById('reminderSendBtn');
+            sendBtn.disabled = true;
+            status.textContent = '正在確認寄信服務是否已啟用…';
+            let frame=null, form=null;
+            try {
+                let readiness;
+                try {
+                    readiness = await reminderGetStatus(requestId, 4500);
+                } catch (probeError) {
+                    if (!reminderCheckCancelled) status.textContent='寄信服務尚未部署或無法連線，未發送任何郵件。請先完成 Apps Script 寄信模組部署。';
+                    return;
+                }
+                if (reminderCheckCancelled) return;
+                if (!readiness || readiness.ok !== true || readiness.status !== 'PENDING') {
+                    status.textContent = '寄信服務尚未正確啟用，未發送郵件。請檢查 Apps Script 部署設定。';
+                    return;
+                }
+                reminderSendPhase = 'submitted';
+                status.textContent = '已送出寄信請求，正在確認結果；可關閉視窗，但請勿重複寄送。';
+                document.getElementById('reminderPassphrase').value = '';
+
+                frame=document.createElement('iframe');
+                frame.name='reminderFrame_'+requestId;
+                frame.style.display='none';
+                document.body.appendChild(frame);
+                form=document.createElement('form');
+                form.method='POST'; form.action=GOOGLE_APPS_SCRIPT_URL;
+                form.target=frame.name;form.enctype='application/x-www-form-urlencoded';form.style.display='none';
+                const fields={action:'sendPaymentReminder',requestId,dateId:reminderSelected.dateId,
+                    orderId:reminderSelected.orderId,email,subject,body,passphrase};
+                Object.entries(fields).forEach(([name,value])=>{
+                    const el=document.createElement('input');el.type='hidden';el.name=name;el.value=String(value||'');form.appendChild(el);
+                });
+                document.body.appendChild(form); form.submit();
+                // 僅根據後端寄送紀錄判定成功；逾時不能當作寄送失敗或取消。
+                let result=null;
+                const deadline = Date.now()+30000;
+                while (Date.now()<deadline) {
+                    await new Promise(resolve=>setTimeout(resolve,1300));
+                    try { result=await reminderGetStatus(requestId, 4500); } catch(e) { continue; }
+                    if (result && (result.status==='SENT' || result.status==='FAILED')) break;
+                }
+                if (result && result.status==='SENT') {
+                    status.textContent='寄送成功！系統已記錄寄送時間，付款狀態不變。';
+                    showToast('催繳通知已寄送');
+                } else if (result && result.status==='FAILED') {
+                    status.textContent='寄送失敗：'+String(result.message||'請檢查後端設定');
+                } else {
+                    reminderNeedsReview = true;
+                    status.textContent='寄送結果尚未確認。請先檢查「催款寄送紀錄」及 Gmail 寄件備份，避免重複寄送。';
+                }
+            } catch (error) {
+                if (reminderSendPhase === 'submitted') {
+                    reminderNeedsReview = true;
+                    status.textContent='寄送結果尚未確認：'+error.message+'。請先查寄送紀錄，避免重複寄送。';
+                } else if (!reminderCheckCancelled) {
+                    status.textContent='寄信服務檢查失敗，未發送任何郵件。';
+                }
+            } finally {
+                // 避免長時間留下含通關密語的隱藏表單；iframe 等待完成後再移除。
+                if (form) form.remove();
+                if (frame) setTimeout(()=>frame.remove(),2000);
+                reminderSending=false;
+                reminderSendPhase='idle';
+                sendBtn.disabled=reminderNeedsReview;
+            }
+        };
+
         function renderSummary() {
             const activeData = getActiveDateObj();
             const orders = activeData.orders || [];
@@ -2494,11 +2758,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             const unpaidSummary = document.getElementById('unpaidSummary');
             const unpaidAmount = document.getElementById('unpaidAmount');
             const unpaidViewBtn = document.getElementById('unpaidViewBtn');
-            const unpaidCopyBtn = document.getElementById('unpaidCopyBtn');
             if (unpaidSummary) unpaidSummary.innerText = unpaid.length ? `目前有 ${unpaid.length} 人尚未付款` : '目前全部已付款 🎉';
             if (unpaidAmount) unpaidAmount.innerText = unpaid.length ? `未付款 $${unpaidTotal}` : '未付款 $0';
             if (unpaidViewBtn) unpaidViewBtn.innerText = unpaid.length ? '查看名單' : '查看';
-            if (unpaidCopyBtn) unpaidCopyBtn.classList.toggle('hidden', unpaid.length === 0);
         }
 
 
@@ -2639,11 +2901,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         window.onload = function() {
             try {
                 loadLocalState();
-                try {
-                    if (!localStorage.getItem(LOCAL_SELECTED_DATE_KEY) && appState.currentDateId) {
-                        localStorage.setItem(LOCAL_SELECTED_DATE_KEY, appState.currentDateId);
-                    }
-                } catch (e) {}
+                // 初次進站先顯示本機已知的最新開團日期，待遠端同步完成後再以遠端最新日期為準。
+                const newestLocalId = getNewestLunchDateId(appState);
+                if (newestLocalId) appState.currentDateId = newestLocalId;
                 renderApp();
                 initFirebase();
             } catch (err) {
@@ -2666,7 +2926,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
   const RETRY_AFTER_STALE_DEPLOY_MS = 2 * 60 * 1000;
   const modalIds = [
     'orderModal', 'editMenuModal', 'editCurrentDateModal', 'newDateModal',
-    'menuLibraryModal', 'menuMasterEditModal', 'unpaidModal', 'lunchHistoryModal'
+    'menuLibraryModal', 'menuMasterEditModal', 'unpaidModal', 'lunchHistoryModal', 'reminderModal'
   ];
   let checking = false;
   let lastCheckAt = 0;
@@ -2689,6 +2949,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     const active = document.activeElement;
     if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return false;
     try {
+      if (typeof reminderSending !== 'undefined' && reminderSending) return false;
       if (typeof isSubmittingOrder !== 'undefined' && isSubmittingOrder) return false;
       if (typeof isSaving !== 'undefined' && isSaving) return false;
       if (typeof pendingExpectedServerVersion !== 'undefined' && pendingExpectedServerVersion > 0) return false;
