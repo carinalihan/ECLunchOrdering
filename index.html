@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
-    <meta name="eclunch-build" content="2026-10-23-v3-reminder-03">
+    <meta name="eclunch-build" content="2026-10-23-v3-reminder-history-01">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -515,7 +515,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     <footer id="eclunchFooter" class="max-w-7xl w-full mx-auto px-4 sm:px-6 pb-5 pt-1 text-center" aria-label="網站版本資訊">
         <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-slate-500">
             <p class="text-xs font-semibold tracking-wide">Designed by E-Commerce Team</p>
-            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/23 11:27</p>
+            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/23 13:54</p>
         </div>
     </footer>
 
@@ -2510,6 +2510,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         }
 
         // ====== 歷史未付款催繳（不寫入訂單 state）======
+        // 催繳成功紀錄僅顯示從後端「催款寄送紀錄」讀到的 SENT 狀態。
+        // 只取成功次數與時間，不把收件 Email 等個資送到公開網頁。
+        let reminderHistoryOpenSequence = 0;
         let reminderSelected = null;
         let reminderSending = false;
         let reminderActiveRequestId = '';
@@ -2569,7 +2572,12 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                     heading.textContent = `${rec.dateLabel}｜${rec.order.name || '未填姓名'}｜$${Number(rec.order.price) || 0}`;
                     const subtitle = document.createElement('div'); subtitle.className = 'text-xs text-slate-500 mt-1 break-words';
                     subtitle.textContent = `${rec.order.dish || '未填寫餐點'}${rec.order.note ? '｜' + rec.order.note : ''}`;
-                    info.append(heading,subtitle); label.append(radio,info);
+                    const sentHistory = document.createElement('div');
+                    sentHistory.className = 'hidden text-xs text-emerald-700 font-medium mt-2 flex items-center gap-1.5 flex-wrap';
+                    sentHistory.dataset.reminderDateId = String(rec.dateId);
+                    sentHistory.dataset.reminderOrderId = String(rec.orderId);
+                    sentHistory.setAttribute('aria-label', '成功寄送紀錄');
+                    info.append(heading,subtitle,sentHistory); label.append(radio,info);
                     radio.addEventListener('change',()=>{
                         reminderSelected = { dateId:rec.dateId, orderId:rec.orderId, dateLabel:rec.dateLabel,
                             name:String(rec.order.name||'未填姓名'), price:Number(rec.order.price)||0 };
@@ -2584,8 +2592,11 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             document.getElementById('reminderSubject').value = '';
             document.getElementById('reminderBody').value = '';
             document.getElementById('reminderModal').classList.remove('hidden');
+            // 每次展開時更新成功紀錄；讀不到時不顯示任何「已催繳」標示。
+            refreshReminderSentHistory();
         };
         window.closeReminderModal = function () {
+            reminderHistoryOpenSequence++;
             // 檢查後端期間可取消；真正 POST 已送出時，關閉僅影響畫面，不會撤銷寄信。
             if (reminderSending && reminderSendPhase === 'checking') {
                 reminderCheckCancelled = true;
@@ -2596,6 +2607,55 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             document.getElementById('reminderModal').classList.add('hidden');
             document.getElementById('reminderPassphrase').value = '';
         };
+        function reminderGetSentHistory(timeoutMs=7000) {
+            // 使用既有 Apps Script JSONP 通道，不包含通關密語或 Email。
+            return new Promise((resolve, reject) => {
+                const fn='__reminderHistory_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+                const tag=document.createElement('script'); let done=false;
+                const clean=()=>{if(done)return;done=true;clearTimeout(timer);delete window[fn];tag.remove();};
+                const timer=setTimeout(()=>{clean();reject(new Error('催繳紀錄查詢逾時'));},timeoutMs);
+                window[fn]=data=>{clean();resolve(data);};
+                tag.onerror=()=>{clean();reject(new Error('無法讀取催繳紀錄'));};
+                tag.src=GOOGLE_APPS_SCRIPT_URL+'?action=reminderHistory&callback='+encodeURIComponent(fn)+'&t='+Date.now();
+                document.head.appendChild(tag);
+            });
+        }
+        async function refreshReminderSentHistory() {
+            const seq=++reminderHistoryOpenSequence;
+            const list=document.getElementById('reminderOrderList');
+            // 選單切換時，只更新這次開啟的紀錄節點，防止舊請求覆蓋新清單。
+            try {
+                const data=await reminderGetSentHistory();
+                if (seq!==reminderHistoryOpenSequence || !data || data.ok!==true || !Array.isArray(data.entries)) return;
+                const byOrder=new Map();
+                data.entries.forEach(item => {
+                    if (item && item.dateId && item.orderId && Number(item.count)>0) {
+                        byOrder.set(JSON.stringify([String(item.dateId),String(item.orderId)]),item);
+                    }
+                });
+                list.querySelectorAll('[data-reminder-date-id][data-reminder-order-id]').forEach(el => {
+                    const key=JSON.stringify([el.dataset.reminderDateId,el.dataset.reminderOrderId]);
+                    const item=byOrder.get(key);
+                    el.replaceChildren();
+                    if (!item) {el.classList.add('hidden');return;}
+                    const icon=document.createElement('i');icon.className='fa-solid fa-circle-check';icon.setAttribute('aria-hidden','true');
+                    const text=document.createElement('span');
+                    const count=Number(item.count)||1;
+                    text.textContent=count>1?`已成功催繳 ${count} 次`:'已成功寄送催繳通知';
+                    el.append(icon,text);
+                    if (item.lastSentAt) {
+                        const time=document.createElement('span');
+                        time.className='text-slate-500 font-normal';
+                        time.textContent='最近：'+String(item.lastSentAt);
+                        el.appendChild(time);
+                    }
+                    el.classList.remove('hidden');
+                });
+            } catch (err) {
+                // 讀取失敗絕不顯示已寄送（尤其不把 FAILED / PENDING 誤認為成功）。
+                console.debug('尚無法讀取催繳成功紀錄',err);
+            }
+        }
         function reminderGetStatus(requestId, timeoutMs=4500) {
             // GET 只查詢隨機請求代碼的寄送結果；通關密語／Email 絕不放在 URL。
             return new Promise((resolve,reject) => {
@@ -2677,6 +2737,8 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                 if (result && result.status==='SENT') {
                     status.textContent='寄送成功！系統已記錄寄送時間，付款狀態不變。';
                     showToast('催繳通知已寄送');
+                    // 成功後立刻重新從後端查詢；不靠前端自行假設已寄送。
+                    if (!document.getElementById('reminderModal').classList.contains('hidden')) refreshReminderSentHistory();
                 } else if (result && result.status==='FAILED') {
                     status.textContent='寄送失敗：'+String(result.message||'請檢查後端設定');
                 } else {
