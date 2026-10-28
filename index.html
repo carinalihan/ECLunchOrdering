@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
-    <meta name="eclunch-build" content="2026-10-28-v3-open-notify-01">
+    <meta name="eclunch-build" content="2026-10-28-v3-open-notify-03">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -516,7 +516,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     <footer id="eclunchFooter" class="max-w-7xl w-full mx-auto px-4 sm:px-6 pb-5 pt-1 text-center" aria-label="網站版本資訊">
         <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-slate-500">
             <p class="text-xs font-semibold tracking-wide">Designed by E-Commerce Team</p>
-            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/28 16:43</p>
+            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/28 17:42</p>
         </div>
     </footer>
 
@@ -924,12 +924,24 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                 <button type="button" onclick="openNotifySelectAll()" class="px-3 py-1.5 rounded-lg text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-100">全選未通知名單</button>
               </div>
               <div id="openNotifyRoster" class="rounded-xl border border-slate-200 divide-y divide-slate-100 max-h-48 overflow-y-auto"></div>
-              <div class="rounded-xl bg-blue-50/60 border border-blue-100 p-3 space-y-1 text-sm text-slate-700">
-                <div class="font-semibold">開團信件預覽</div>
-                <div id="openNotifyPreviewSubject" class="text-xs text-slate-700"></div>
-                <p id="openNotifyPreviewBody" class="text-xs leading-5 text-slate-500 whitespace-pre-line"></p>
+              <div class="rounded-xl bg-blue-50/60 border border-blue-100 p-3 space-y-3 text-sm text-slate-700">
+                <div class="font-bold">開團通知信件（團長可編輯）</div>
+                <div>
+                  <label for="openNotifySubjectInput" class="block text-xs font-semibold text-slate-700 mb-1">信件主旨</label>
+                  <input type="text" id="openNotifySubjectInput" maxlength="200" class="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-blue-200" aria-describedby="openNotifyTemplateHelp">
+                </div>
+                <div>
+                  <label for="openNotifyBodyInput" class="block text-xs font-semibold text-slate-700 mb-1">信件內容</label>
+                  <textarea id="openNotifyBodyInput" rows="8" maxlength="4000" class="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-800 leading-6 focus:ring-2 focus:ring-blue-200"></textarea>
+                </div>
+                <p id="openNotifyTemplateHelp" class="text-xs text-slate-500">可修改內容；<code>{{姓名}}</code> 會替換成每位團員的訂閱姓名，<code>{{店家}}</code>、<code>{{日期}}</code>、<code>{{結單時間}}</code> 由開團資料帶入。</p>
+                <div class="bg-white rounded-lg border border-blue-100 p-3 space-y-1">
+                  <div class="text-xs font-semibold text-blue-700" id="openNotifyPreviewRecipient">實際寄送預覽</div>
+                  <div id="openNotifyPreviewSubject" class="text-xs font-medium text-slate-700 break-words"></div>
+                  <p id="openNotifyPreviewBody" class="text-xs leading-5 text-slate-600 whitespace-pre-wrap break-words"></p>
+                </div>
               </div>
-              <p class="text-xs text-slate-500">每次最多選 20 人；已成功寄送或正在寄送的同一日期將略過。正式寄出後才留下成功紀錄。</p>
+              <p class="text-xs text-slate-500">每次最多選 50 人，分別寄送個人化信件；已成功寄送或正在寄送的同一日期將略過。正式寄出後才留下成功紀錄。</p>
               <button type="button" id="openNotifySendBtn" onclick="openNotifySendGroup()" class="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 font-bold text-sm disabled:opacity-50">確認寄送開團通知</button>
             </div>
             <div role="status" aria-live="polite" id="openNotifyLeaderStatus" class="text-sm min-h-[20px] text-slate-600"></div>
@@ -3061,6 +3073,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
   let busy=false;
   let memberMode='subscribe';
   let roster=[];
+  let pendingMembers=[];
   let alreadySent=new Set();
   let loadedForDate='';
   let verifiedAddress='';
@@ -3105,7 +3118,8 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
       });
       document.body.appendChild(form);form.submit();
       // 跨網域 POST 不依賴 iframe 的頁面內容；僅以後端狀態查詢判定成功。
-      const deadline=Date.now()+(operation==='sendGroup'?80000:30000);
+      // 批次最多 50 位：個別寄送可能比原本 20 位需要更久。逾時不代表失敗，務必查紀錄。
+      const deadline=Date.now()+(operation==='sendGroup'?210000:30000);
       while(Date.now()<deadline) {
         await new Promise(resolve=>setTimeout(resolve,1400));
         try {
@@ -3141,17 +3155,43 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     const id=$('openNotifyDate').value;
     return ((typeof appState!=='undefined') && appState.dates && appState.dates[id])||null;
   }
+  // 主旨／內文由團長編輯；每個收件人寄送前，後端才將 {{姓名}} 換成該訂閱姓名。
+  function openNotifySubstitutions(template,name) {
+    const dateObj=currentDateData()||{};
+    const select=$('openNotifyDate');
+    const dateLabel=(select.options[select.selectedIndex]||{}).textContent||'';
+    const dict={
+      '姓名':name||'團員',
+      '日期':dateLabel,
+      '店家':String(dateObj.restaurant||'未設定'),
+      '結單時間':String(dateObj.deadline||'請參考訂餐網站')
+    };
+    return String(template||'').replace(/\{\{(姓名|日期|店家|結單時間)\}\}/g,(_,key)=>dict[key]);
+  }
+  function refreshOpenNotifyPreview() {
+    const checked=$('openNotifyRoster').querySelector('.open-notify-member-check:checked');
+    const target=checked?roster.find(p=>p.email===checked.dataset.email):null;
+    const recipient=target||roster.find(p=>!alreadySent.has(p.email));
+    const displayName=recipient?recipient.name:'團員';
+    $('openNotifyPreviewRecipient').textContent=recipient?'以「'+displayName+'」為例的實際寄送內容':'實際寄送預覽（姓名示意）';
+    $('openNotifyPreviewSubject').textContent=openNotifySubstitutions($('openNotifySubjectInput').value,displayName);
+    $('openNotifyPreviewBody').textContent=openNotifySubstitutions($('openNotifyBodyInput').value,displayName);
+  }
   function fillPreview() {
     const dateObj=currentDateData();
     const select=$('openNotifyDate');
-    if(!dateObj){$('openNotifyMealDetails').textContent='尚無可通知的開團日期';$('openNotifyPreviewSubject').textContent='';$('openNotifyPreviewBody').textContent='';return;}
-    const label=(select.options[select.selectedIndex]||{}).textContent||'';
+    if(!dateObj){
+      $('openNotifyMealDetails').textContent='尚無可通知的開團日期';
+      $('openNotifySubjectInput').value='';$('openNotifyBodyInput').value='';
+      refreshOpenNotifyPreview();return;
+    }
     $('openNotifyMealDetails').textContent=`店家：${dateObj.restaurant||'未設定'}　｜　結單：${dateObj.deadline||'請參考網站'}`;
-    $('openNotifyPreviewSubject').textContent=`【良興電商午餐食刻】${label} 開團通知`;
-    $('openNotifyPreviewBody').textContent=`Hi 同仁，\n\n${label} 午餐已開放訂購！\n請至午餐食刻查看菜單並下單：\nhttps://carinalihan.github.io/ECLunchOrdering/\n\n良興電商 午餐食刻！`;
+    $('openNotifySubjectInput').value='【良興電商午餐食刻】{{日期}} 開團通知';
+    $('openNotifyBodyInput').value='Hi {{姓名}}，\n\n{{日期}} 午餐已開放訂購！\n店家：{{店家}}\n結單時間：{{結單時間}}\n\n請點擊以下網址查看菜單並下單：\nhttps://carinalihan.github.io/ECLunchOrdering/\n\n良興電商 午餐食刻！';
+    refreshOpenNotifyPreview();
   }
   function clearRoster() {
-    roster=[];alreadySent=new Set();loadedForDate='';
+    roster=[];pendingMembers=[];alreadySent=new Set();loadedForDate='';
     $('openNotifyRoster').replaceChildren();$('openNotifyRosterSection').classList.add('hidden');
     status('openNotifyLeaderStatus','請輸入團長通關密語後載入名單');
   }
@@ -3218,11 +3258,26 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
       const email=document.createElement('span');email.className='block text-xs text-slate-500 break-all';email.textContent=person.email;
       text.append(name,email);
       if(sent){const hint=document.createElement('span');hint.textContent='本團已通知';hint.className='text-xs text-emerald-700 font-semibold';text.appendChild(hint);}
+      checkbox.addEventListener('change',refreshOpenNotifyPreview);
       label.append(checkbox,text);root.appendChild(label);
     });
-    if(!roster.length){const p=document.createElement('p');p.className='px-4 py-5 text-sm text-slate-500';p.textContent='目前沒有已完成 Email 驗證的訂閱團員。';root.appendChild(p);}
-    $('openNotifyRosterCount').textContent=`共 ${roster.length} 人`;
+    if(!roster.length){
+      const p=document.createElement('p');p.className='px-4 py-4 text-sm text-slate-500';
+      p.textContent=pendingMembers.length?'目前沒有可通知的團員；下方有人尚未完成訂閱驗證。':'目前沒有已完成 Email 驗證的訂閱團員。';
+      root.appendChild(p);
+    }
+    // 待驗證的登記也顯示給團長看，但不提供寄送勾選框。
+    pendingMembers.forEach(person=>{
+      const row=document.createElement('div');row.className='px-3 py-2.5 bg-amber-50/70 flex items-start gap-3';
+      const label=document.createElement('div');label.className='flex-1 min-w-0';
+      const name=document.createElement('div');name.className='text-sm font-semibold text-slate-800';name.textContent=person.name;
+      const email=document.createElement('div');email.className='text-xs text-slate-500 break-all';email.textContent=person.email;
+      const hint=document.createElement('div');hint.className='text-xs text-amber-700 mt-1';hint.textContent=(person.reason||'尚未完成驗證')+'・暫不可寄送，請團員回到「團員訂閱」完成驗證';
+      label.append(name,email,hint);row.append(label);root.append(row);
+    });
+    $('openNotifyRosterCount').textContent=`可通知 ${roster.length} 位／待確認 ${pendingMembers.length} 位`;
     $('openNotifyRosterSection').classList.remove('hidden');
+    refreshOpenNotifyPreview();
   }
   window.openNotifyLoadRoster=async function() {
     const passphrase=$('openNotifyAdminPassword').value;
@@ -3234,28 +3289,40 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
       const r=await onPost('loadRoster',{passphrase,dateId});
       if(!r.ok)throw new Error(r.message||'讀取名單失敗');
       roster=Array.isArray(r.members)?r.members:[];
+      pendingMembers=Array.isArray(r.pendingMembers)?r.pendingMembers:[];
       alreadySent=new Set(r.alreadySent||[]);loadedForDate=dateId;
       renderRoster();status('openNotifyLeaderStatus',r.message||'名單已載入',true);
     }catch(err){clearRoster();status('openNotifyLeaderStatus',err.message,false);}
     finally{$('openNotifyLoadBtn').disabled=false;}
   };
   window.openNotifySelectAll=function(){
-    $('openNotifyRoster').querySelectorAll('.open-notify-member-check:not(:disabled)').forEach(c=>{c.checked=true;});
+    const checks=Array.from($('openNotifyRoster').querySelectorAll('.open-notify-member-check:not(:disabled)'));
+    checks.forEach((c,i)=>{c.checked=i<50;});
+    if(checks.length>50)status('openNotifyLeaderStatus','已選取前 50 位未通知團員；其餘請下一批寄送');
+    refreshOpenNotifyPreview();
   };
   window.openNotifySendGroup=async function(){
     const dateId=$('openNotifyDate').value;
     if(loadedForDate!==dateId){status('openNotifyLeaderStatus','開團日期已變更，請重新載入名單',false);return;}
     const emails=Array.from($('openNotifyRoster').querySelectorAll('.open-notify-member-check:checked')).map(x=>x.dataset.email);
     if(!emails.length){status('openNotifyLeaderStatus','請先勾選要通知的團員',false);return;}
-    if(emails.length>20){status('openNotifyLeaderStatus','每次最多 20 人，請分批寄送',false);return;}
+    if(emails.length>50){status('openNotifyLeaderStatus','每次最多 50 人，請分批寄送',false);return;}
     const passphrase=$('openNotifyAdminPassword').value;
     if(!passphrase){status('openNotifyLeaderStatus','請輸入團長通關密語',false);return;}
+    const subjectTemplate=$('openNotifySubjectInput').value.trim();
+    const bodyTemplate=$('openNotifyBodyInput').value.trim();
+    if(!subjectTemplate || subjectTemplate.length>200 || /[\r\n]/.test(subjectTemplate)) {status('openNotifyLeaderStatus','信件主旨不可空白或換行，最多 200 字',false);return;}
+    if(!bodyTemplate || bodyTemplate.length>4000) {status('openNotifyLeaderStatus','信件內容不可空白，最多 4000 字',false);return;}
+    if(!bodyTemplate.includes('{{姓名}}')) {status('openNotifyLeaderStatus','信件內容請保留 {{姓名}}，才能個別帶入團員姓名',false);return;}
     const label=$('openNotifyDate').selectedOptions[0]?.textContent||'';
-    if(!confirm(`確定寄送 ${label} 開團通知給 ${emails.length} 人？\n\n${emails.join('\n')}\n\n本次確認後會真正寄出 Email。`))return;
+    const first=roster.find(p=>p.email===emails[0]);
+    const firstName=first?first.name:'團員';
+    const example=`主旨：${openNotifySubstitutions(subjectTemplate,firstName)}\n\n${openNotifySubstitutions(bodyTemplate,firstName)}`;
+    if(!confirm(`確定寄送 ${label} 開團通知給 ${emails.length} 人？\n\n收件名單：\n${emails.join('\n')}\n\n第一位團員的寄送內容：\n${example}\n\n本次確認後會真正寄出 Email。`))return;
     status('openNotifyLeaderStatus','已送出寄送請求，正在確認結果，請勿重複按送出…');
     $('openNotifySendBtn').disabled=true;
     try {
-      const r=await onPost('sendGroup',{passphrase,dateId,emails:JSON.stringify(emails)});
+      const r=await onPost('sendGroup',{passphrase,dateId,emails:JSON.stringify(emails),subjectTemplate,bodyTemplate});
       status('openNotifyLeaderStatus',r.message||'寄送流程已完成',r.ok===true);
       // 以伺服器成功紀錄重新取得名單；不用前端自行標記成功。
       if(r.status==='DONE') {
@@ -3265,6 +3332,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     }catch(err){status('openNotifyLeaderStatus',err.message,false);}
     finally{$('openNotifySendBtn').disabled=false;}
   };
+  ['openNotifySubjectInput','openNotifyBodyInput'].forEach(id=>$(id).addEventListener('input',refreshOpenNotifyPreview));
   document.addEventListener('keydown',e=>{if(e.key==='Escape' && !$('openNotifyModal').classList.contains('hidden'))closeOpenNotifyModal();});
 })();
 </script>
