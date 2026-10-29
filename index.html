@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
-    <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png?v=20261029-09">
-    <meta name="eclunch-build" content="2026-10-29-v3-open-notify-09">
+    <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png?v=20261029-11">
+    <meta name="eclunch-build" content="2026-10-29-v3-open-notify-11">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -554,7 +554,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     <footer id="eclunchFooter" class="max-w-7xl w-full mx-auto px-4 sm:px-6 pb-5 pt-1 text-center" aria-label="網站版本資訊">
         <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-slate-500">
             <p class="text-xs font-semibold tracking-wide">Designed by E-Commerce Team</p>
-            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/29 11:54 (台灣時間)｜V09</p>
+            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/29 12:40 (台灣時間)｜V11</p>
         </div>
     </footer>
 
@@ -3403,21 +3403,27 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     const root=$('openNotifyRoster');root.replaceChildren();
     roster.forEach((person,index)=>{
       const sent=alreadySent.has(person.email);
-      const label=document.createElement('label');label.className='flex items-start gap-3 px-3 py-2.5 hover:bg-blue-50 cursor-pointer'+(sent?' bg-emerald-50/40':'');
-      const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='open-notify-member-check mt-1 accent-blue-600';checkbox.dataset.email=person.email;
-      const text=document.createElement('span');text.className='flex-1 min-w-0';
-      const name=document.createElement('span');name.className='block text-sm font-semibold text-slate-800';name.textContent=person.name;
-      const email=document.createElement('span');email.className='block text-xs text-slate-500 break-all';email.textContent=person.email;
+      // V10 僅壓縮名單外觀：原勾選 email、已發送標記和重新寄送流程均保留。
+      const label=document.createElement('label');
+      label.className='flex items-center gap-2 px-3 py-1.5 min-h-[38px] hover:bg-blue-50 cursor-pointer whitespace-nowrap'+(sent?' bg-emerald-50/40':'');
+      const checkbox=document.createElement('input');
+      checkbox.type='checkbox';checkbox.className='open-notify-member-check shrink-0 accent-blue-600';checkbox.dataset.email=person.email;
+      const text=document.createElement('span');text.className='flex flex-1 min-w-0 items-center gap-2 overflow-hidden';
+      const name=document.createElement('span');
+      name.className='shrink-0 max-w-[7rem] truncate text-sm font-semibold text-slate-800';name.textContent=person.name;name.title=person.name;
+      const email=document.createElement('span');
+      email.className='flex-1 min-w-0 truncate text-xs text-slate-500';email.textContent=person.email;email.title=person.email;
       text.append(name,email);
-      if(person.state==='PENDING'){
-        const hint=document.createElement('span');
-        hint.textContent='尚未完成驗證 · 團長仍可選擇通知（請確認 Email）';
-        hint.className='block text-xs text-amber-700 mt-1';text.appendChild(hint);
-      } else if(person.state==='ACTIVE') {
-        const hint=document.createElement('span');hint.textContent='已完成 Email 驗證';
-        hint.className='block text-xs text-emerald-700 mt-1';text.appendChild(hint);
+      const hint=document.createElement('span');
+      hint.className='shrink-0 text-xs '+(person.state==='PENDING'?'text-amber-700':'text-emerald-700');
+      hint.textContent=person.state==='PENDING'?'尚未完成驗證':'已完成驗證';
+      if(person.state==='PENDING')hint.title='團長仍可選擇通知，請確認 Email 是否正確';
+      text.appendChild(hint);
+      if(sent){
+        const sentHint=document.createElement('span');
+        sentHint.textContent='已發送';sentHint.title='已發送過，仍可勾選再次寄送';
+        sentHint.className='shrink-0 text-xs text-emerald-700 font-semibold';text.appendChild(sentHint);
       }
-      if(sent){const hint=document.createElement('span');hint.textContent='已發送（可再次勾選寄送）';hint.className='block text-xs text-emerald-700 font-semibold mt-1';text.appendChild(hint);}
       checkbox.addEventListener('change',refreshOpenNotifyPreview);
       label.append(checkbox,text);root.appendChild(label);
     });
