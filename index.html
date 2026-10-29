@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
-    <meta name="eclunch-build" content="2026-10-29-v3-open-notify-06">
+    <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png?v=20261029-08">
+    <meta name="eclunch-build" content="2026-10-29-v3-open-notify-08">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -545,7 +546,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     <footer id="eclunchFooter" class="max-w-7xl w-full mx-auto px-4 sm:px-6 pb-5 pt-1 text-center" aria-label="網站版本資訊">
         <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-slate-500">
             <p class="text-xs font-semibold tracking-wide">Designed by E-Commerce Team</p>
-            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/28 17:42</p>
+            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/29 11:22 (台灣時間)｜V08</p>
         </div>
     </footer>
 
@@ -924,7 +925,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
               </div>
               <button type="submit" class="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 text-sm disabled:opacity-50" id="openNotifyRequestCodeBtn">寄送驗證碼</button>
             </form>
-            <form onsubmit="openNotifyVerifyCode(event)" id="openNotifyVerifyWrap" class="hidden space-y-2 bg-blue-50/80 border border-blue-100 rounded-xl p-3">
+            <form onsubmit="window.openNotifyConfirmCode(event)" id="openNotifyVerifyWrap" class="hidden space-y-2 bg-blue-50/80 border border-blue-100 rounded-xl p-3">
               <label for="openNotifyVerifyCode" class="block text-xs font-semibold text-slate-700">信箱中的 6 位驗證碼（15 分鐘有效）</label>
               <input id="openNotifyVerifyCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" placeholder="請輸入 6 位數字" class="w-full rounded-xl bg-white border border-blue-200 px-3 py-2.5 text-sm">
               <button type="submit" id="openNotifyVerifyBtn" class="w-full rounded-xl bg-blue-600 text-white py-2.5 text-sm font-semibold">確認驗證</button>
@@ -967,7 +968,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                   <p id="openNotifyPreviewBody" class="text-xs leading-5 text-slate-600 whitespace-pre-wrap break-words"></p>
                 </div>
               </div>
-              <p class="text-xs text-slate-500">每次最多選 50 人，分別寄送個人化信件；已成功寄送或正在寄送的同一日期將略過。正式寄出後才留下成功紀錄。</p>
+              <p class="text-xs text-slate-500">每次最多選 50 人，分別寄送個人化信件。已發送者會顯示標記，但團長仍可手動勾選再次寄送；同一日期正在寄送中的請求仍會略過，避免重複執行。</p>
               <button type="button" id="openNotifySendBtn" onclick="openNotifySendGroup()" class="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 font-bold text-sm disabled:opacity-50">確認寄送開團通知</button>
             </div>
             <div role="status" aria-live="polite" id="openNotifyLeaderStatus" class="text-sm min-h-[20px] text-slate-600"></div>
@@ -976,6 +977,16 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
           <button type="button" onclick="closeOpenNotifyModal()" class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold">關閉</button>
         </div>
+      </div>
+    </div>
+
+    <!-- V07 訂閱驗證成功提示：必須確認後才離開，避免看起來直接跳回首頁 -->
+    <div id="openNotifySubscribedDialog" class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-900/60 p-4" role="alertdialog" aria-modal="true" aria-labelledby="openNotifySubscribedTitle" aria-describedby="openNotifySubscribedMessage">
+      <div class="bg-white rounded-2xl shadow-2xl border border-emerald-100 max-w-sm w-full p-6 text-center space-y-4">
+        <div class="mx-auto w-14 h-14 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-700"><i class="fa-solid fa-check text-2xl"></i></div>
+        <h3 id="openNotifySubscribedTitle" class="text-xl font-bold text-slate-800">訂閱成功！</h3>
+        <p id="openNotifySubscribedMessage" class="text-sm text-slate-600 leading-7">Email 驗證完成，已成功加入開團通知名單。</p>
+        <button type="button" id="openNotifySubscribedDismissBtn" onclick="closeOpenNotifySubscribedDialog()" class="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 text-sm">知道了</button>
       </div>
     </div>
 
@@ -3263,7 +3274,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
   function refreshOpenNotifyPreview() {
     const checked=$('openNotifyRoster').querySelector('.open-notify-member-check:checked');
     const target=checked?roster.find(p=>p.email===checked.dataset.email):null;
-    const recipient=target||roster.find(p=>!alreadySent.has(p.email));
+    const recipient=target||roster.find(p=>!alreadySent.has(p.email))||roster[0];
     const displayName=recipient?recipient.name:'團員';
     $('openNotifyPreviewRecipient').textContent=recipient?'以「'+displayName+'」為例的實際寄送內容':'實際寄送預覽（姓名示意）';
     $('openNotifyPreviewSubject').textContent=openNotifySubstitutions($('openNotifySubjectInput').value,displayName);
@@ -3323,15 +3334,32 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     } catch(err) {status('openNotifyMemberStatus',err.message,false);}
     finally {$('openNotifyRequestCodeBtn').disabled=false;}
   };
-  window.openNotifyVerifyCode=async function(e) {
+  // 使用者需按「知道了」才關閉成功提示，且只有伺服器明確回傳 ACTIVE 才顯示。
+  window.closeOpenNotifySubscribedDialog=function(){
+    const dialog=$('openNotifySubscribedDialog');
+    dialog.classList.add('hidden');dialog.classList.remove('flex');
+    closeOpenNotifyModal();
+  };
+  function showOpenNotifySubscribedDialog(){
+    const dialog=$('openNotifySubscribedDialog');
+    dialog.classList.remove('hidden');dialog.classList.add('flex');
+    $('openNotifySubscribedDismissBtn').focus();
+  }
+  window.openNotifyConfirmCode=async function(e) {
     e.preventDefault();const code=$('openNotifyVerifyCode').value.trim();
     status('openNotifyMemberStatus','正在驗證…');$('openNotifyVerifyBtn').disabled=true;
     try {
       const r=await onPost('verifySubscribe',{email:verifiedAddress,code});
-      status('openNotifyMemberStatus',r.message||'操作完成',!!r.ok);
-      if(r.ok){$('openNotifyVerifyWrap').classList.add('hidden');$('openNotifyVerifyCode').value='';
-        // 後端新版本會回傳 verificationState，僅表示該次請求寫入後確認的狀態。
-        if(r.verificationState==='ACTIVE')status('openNotifyMemberStatus','已驗證且確認名單狀態為 ACTIVE；團長請重新載入名單。',true);
+      // 舊的 Apps Script 部署可能沒有回傳 verificationState，不可把不完整結果當成成功。
+      if(r && r.ok===true && r.status==='DONE' && r.verificationState==='ACTIVE') {
+        status('openNotifyMemberStatus','已確認 Google Sheet 訂閱狀態為 ACTIVE。',true);
+        $('openNotifyVerifyWrap').classList.add('hidden');
+        $('openNotifyVerifyCode').value='';
+        verifiedAddress='';
+        showOpenNotifySubscribedDialog();
+      } else {
+        status('openNotifyMemberStatus',(r && r.message && r.ok!==true)?r.message:
+          '尚未取得 Google Sheet 驗證成功的確認，請確認 Apps Script 已部署新版，勿重複註冊。',false);
       }
     }catch(err){status('openNotifyMemberStatus',err.message,false);}
     finally{$('openNotifyVerifyBtn').disabled=false;}
@@ -3341,8 +3369,8 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     const root=$('openNotifyRoster');root.replaceChildren();
     roster.forEach((person,index)=>{
       const sent=alreadySent.has(person.email);
-      const label=document.createElement('label');label.className='flex items-start gap-3 px-3 py-2.5 '+(sent?'opacity-65 bg-slate-50':'hover:bg-blue-50 cursor-pointer');
-      const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='open-notify-member-check mt-1 accent-blue-600';checkbox.dataset.email=person.email;checkbox.disabled=sent;
+      const label=document.createElement('label');label.className='flex items-start gap-3 px-3 py-2.5 hover:bg-blue-50 cursor-pointer'+(sent?' bg-emerald-50/40':'');
+      const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='open-notify-member-check mt-1 accent-blue-600';checkbox.dataset.email=person.email;
       const text=document.createElement('span');text.className='flex-1 min-w-0';
       const name=document.createElement('span');name.className='block text-sm font-semibold text-slate-800';name.textContent=person.name;
       const email=document.createElement('span');email.className='block text-xs text-slate-500 break-all';email.textContent=person.email;
@@ -3355,7 +3383,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         const hint=document.createElement('span');hint.textContent='已完成 Email 驗證';
         hint.className='block text-xs text-emerald-700 mt-1';text.appendChild(hint);
       }
-      if(sent){const hint=document.createElement('span');hint.textContent='本團已通知';hint.className='text-xs text-emerald-700 font-semibold';text.appendChild(hint);}
+      if(sent){const hint=document.createElement('span');hint.textContent='已發送（可再次勾選寄送）';hint.className='block text-xs text-emerald-700 font-semibold mt-1';text.appendChild(hint);}
       checkbox.addEventListener('change',refreshOpenNotifyPreview);
       label.append(checkbox,text);root.appendChild(label);
     });
@@ -3397,8 +3425,11 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
   };
   window.openNotifySelectAll=function(){
     const checks=Array.from($('openNotifyRoster').querySelectorAll('.open-notify-member-check:not(:disabled)'));
-    checks.forEach((c,i)=>{c.checked=i<50;});
-    if(checks.length>50)status('openNotifyLeaderStatus','已選取前 50 位未通知團員；其餘請下一批寄送');
+    const notYetSent=checks.filter(c=>!alreadySent.has(c.dataset.email));
+    checks.forEach(c=>{c.checked=false;}); // 全選預設不重寄已發送者；重寄需團長自行勾選。
+    notYetSent.forEach((c,i)=>{c.checked=i<50;});
+    if(notYetSent.length>50)status('openNotifyLeaderStatus','已選取前 50 位未通知團員；其餘請下一批寄送');
+    if(!notYetSent.length)status('openNotifyLeaderStatus','本團所有團員均已有寄送紀錄，如需再次寄送，請手動勾選對象');
     refreshOpenNotifyPreview();
   };
   window.openNotifySendGroup=async function(){
@@ -3419,8 +3450,10 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     const firstName=first?first.name:'團員';
     const example=`主旨：${openNotifySubstitutions(subjectTemplate,firstName)}\n\n${openNotifySubstitutions(bodyTemplate,firstName)}`;
     const unverified=roster.filter(p=>emails.includes(p.email)&&p.state==='PENDING').length;
+    const resendCount=emails.filter(email=>alreadySent.has(email)).length;
     const warning=unverified?`\n注意：本次包含 ${unverified} 位尚未驗證 Email 的團員，請確認信箱無誤。\n`:'';
-    if(!confirm(`確定寄送 ${label} 開團通知給 ${emails.length} 人？${warning}\n收件名單：\n${emails.join('\n')}\n\n第一位團員的寄送內容：\n${example}\n\n本次確認後會真正寄出 Email。`))return;
+    const resendWarning=resendCount?`\n【再次寄送確認】其中 ${resendCount} 位本團已發送過通知，本次仍會再次寄出 Email。\n`:'';
+    if(!confirm(`確定寄送 ${label} 開團通知給 ${emails.length} 人？${resendWarning}${warning}\n收件名單：\n${emails.join('\n')}\n\n第一位團員的寄送內容：\n${example}\n\n本次確認後會真正寄出 Email。`))return;
     status('openNotifyLeaderStatus','已送出寄送請求，正在確認結果，請勿重複按送出…');
     $('openNotifySendBtn').disabled=true;
     try {
@@ -3435,7 +3468,13 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     finally{$('openNotifySendBtn').disabled=false;}
   };
   ['openNotifySubjectInput','openNotifyBodyInput'].forEach(id=>$(id).addEventListener('input',refreshOpenNotifyPreview));
-  document.addEventListener('keydown',e=>{if(e.key==='Escape' && !$('openNotifyModal').classList.contains('hidden'))closeOpenNotifyModal();});
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    if(!$('openNotifySubscribedDialog').classList.contains('hidden')){
+      e.preventDefault();closeOpenNotifySubscribedDialog();return;
+    }
+    if(!$('openNotifyModal').classList.contains('hidden'))closeOpenNotifyModal();
+  });
 })();
 </script>
 
