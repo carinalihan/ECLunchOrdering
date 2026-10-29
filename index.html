@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
-    <meta name="eclunch-build" content="2026-10-28-v3-open-notify-03">
+    <meta name="eclunch-build" content="2026-10-29-v3-open-notify-06">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -297,6 +297,35 @@ main button.bg-blue-50:hover { background-color: #dcecff; }
 input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
 </style>
 
+<!-- V3 修正版 06：只調整手機版操作列，不修改訂單或開團通知功能 -->
+<style id="lunch-action-toolbar-mobile">
+@media (max-width: 639px) {
+  /* 三個操作鍵（新增訂單、店家菜單、開團通知）即使全顯示也維持單行 */
+  #lunchActionBar {
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 12px;
+  }
+  #lunchActionBar .lunch-action-primary {
+    flex-wrap: nowrap;
+    gap: 6px;
+    min-width: 0;
+  }
+  #lunchActionBar button {
+    flex-shrink: 0;
+    justify-content: center;
+    white-space: nowrap;
+    gap: 4px;
+    padding: 9px 7px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+  #lunchActionBar #openNotifyBtn {
+    margin-left: auto;
+  }
+}
+</style>
+
 <!-- 手機版：提高「我的午餐履歷」按鈕與藍色頁首的對比；其餘功能、排版不變 -->
 <style id="mobile-history-button-contrast-fix">
 @media (max-width: 639px) {
@@ -377,14 +406,14 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         <div class="lg:col-span-8 flex flex-col gap-6">
 
             <!-- Action Bar -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
+            <div id="lunchActionBar" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <div class="lunch-action-primary flex items-center gap-3">
                     <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
                         <i class="fa-solid fa-plus"></i> 新增訂單
                     </button>
                     <!-- View Menu Button if menu image exists -->
                     <button id="viewMenuBtn" onclick="openMenuLightbox()" class="hidden bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium px-4 py-2.5 rounded-xl border border-emerald-200 transition flex items-center gap-2 text-sm">
-                        <i class="fa-solid fa-image"></i> 查看店家菜單
+                        <i class="fa-solid fa-image"></i> <span class="hidden sm:inline">查看店家菜單</span><span class="sm:hidden">看菜單</span>
                     </button>
                 </div>
                 <button type="button" id="openNotifyBtn" onclick="openOpenNotifyModal()" class="ml-auto shrink-0 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-2.5 rounded-xl flex items-center gap-2 text-sm font-semibold transition"><i class="fa-regular fa-bell"></i> 開團通知</button>
@@ -883,10 +912,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         <div class="px-5 py-4 overflow-y-auto space-y-4 min-h-0">
           <section id="openNotifyMemberPanel" class="space-y-3">
             <p class="text-sm text-slate-600">團員只需登記一次。系統會先寄驗證碼，驗證成功才加入名單，不會自動替你訂餐。</p>
-            <div class="flex gap-2 items-center">
-              <button type="button" onclick="openNotifyMemberMode('subscribe')" id="openNotifySubscribeMode" class="rounded-lg px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">訂閱通知</button>
-              <button type="button" onclick="openNotifyMemberMode('unsubscribe')" id="openNotifyUnsubscribeMode" class="rounded-lg px-3 py-1.5 text-xs font-bold bg-white text-slate-600 border border-slate-200">取消訂閱</button>
-            </div>
+            <p class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">如需取消訂閱，請洽電商同仁協助處理。</p>
             <form onsubmit="openNotifyRequestCode(event)" class="space-y-3">
               <div id="openNotifyNameWrap">
                 <label for="openNotifyName" class="block text-xs font-semibold text-slate-600 mb-1">姓名或訂餐綽號</label>
@@ -903,7 +929,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
               <input id="openNotifyVerifyCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" placeholder="請輸入 6 位數字" class="w-full rounded-xl bg-white border border-blue-200 px-3 py-2.5 text-sm">
               <button type="submit" id="openNotifyVerifyBtn" class="w-full rounded-xl bg-blue-600 text-white py-2.5 text-sm font-semibold">確認驗證</button>
             </form>
-            <p class="text-xs text-slate-500">只會在團長主動寄送時收到通知；可以隨時使用「取消訂閱」。請使用自己能收信的 Email。</p>
+            <p class="text-xs text-slate-500">只會在團長主動寄送時收到通知；請使用自己能收信的 Email。</p>
             <div role="status" aria-live="polite" id="openNotifyMemberStatus" class="text-sm min-h-[20px] text-slate-600"></div>
           </section>
           <section id="openNotifyLeaderPanel" class="hidden space-y-4">
@@ -1013,6 +1039,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         let isSubmittingOrder = false;
         // 訂單改採「單筆原子同步」；避免多人點餐時整份 state 互相攜帶與覆蓋。
         const pendingDirectOrders = {};
+        // 刪除操作需等伺服器確認「墓碑 + 資料不在」；輪詢或較早發出的 GET 不得還原畫面。
+        const pendingDeletedDates = {};
+        const pendingDeletedOrders = {};
         const LOCAL_STATE_KEY = "eclunchordering_state_v3";
         const LOCAL_SELECTED_DATE_KEY = "eclunchordering_selected_date_v1";
         // 本次開啟頁面先選最新開團日期；當頁切換仍記住，不因 8 秒輪詢跳回。
@@ -1214,6 +1243,50 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             window.addEventListener('focus', refreshOnReturn);
         }
 
+        function warnIfDeleteUnconfirmed(type, key, deletedAt) {
+            // 刪除操作沒有跨網域 POST 回執；逾時仍未看到伺服器刪除紀錄時，明確提醒管理者確認。
+            setTimeout(() => {
+                const current = type === 'date' ? pendingDeletedDates[key] :
+                    (pendingDeletedOrders[key] && pendingDeletedOrders[key].deletedAt);
+                if (current === deletedAt) {
+                    showToast('刪除尚未取得伺服器確認，請檢查同步狀態後再重新整理確認');
+                }
+            }, 45000);
+        }
+
+        function preservePendingDeletions(incoming) {
+            if (!incoming || !incoming.dates) return;
+            if (!incoming._deletedDates || typeof incoming._deletedDates !== 'object') incoming._deletedDates = {};
+
+            Object.keys(pendingDeletedDates).forEach(dateId => {
+                const deletedAt = pendingDeletedDates[dateId];
+                const isConfirmed = !incoming.dates[dateId] &&
+                    Number(incoming._deletedDates[dateId] || 0) >= deletedAt;
+                if (isConfirmed) {
+                    delete pendingDeletedDates[dateId];
+                    return;
+                }
+                incoming._deletedDates[dateId] = Math.max(Number(incoming._deletedDates[dateId] || 0), deletedAt);
+                delete incoming.dates[dateId];
+            });
+
+            Object.keys(pendingDeletedOrders).forEach(key => {
+                const pending = pendingDeletedOrders[key];
+                const dateObj = incoming.dates[pending.dateId];
+                if (!dateObj) return; // 此日期也可能正在刪除。
+                if (!dateObj._deletedOrderIds || typeof dateObj._deletedOrderIds !== 'object') dateObj._deletedOrderIds = {};
+                if (!Array.isArray(dateObj.orders)) dateObj.orders = [];
+                const isConfirmed = Number(dateObj._deletedOrderIds[pending.orderId] || 0) >= pending.deletedAt &&
+                    !dateObj.orders.some(o => o && o.id === pending.orderId);
+                if (isConfirmed) {
+                    delete pendingDeletedOrders[key];
+                    return;
+                }
+                dateObj._deletedOrderIds[pending.orderId] = Math.max(Number(dateObj._deletedOrderIds[pending.orderId] || 0), pending.deletedAt);
+                dateObj.orders = dateObj.orders.filter(o => !o || o.id !== pending.orderId);
+            });
+        }
+
         function loadStateFromSheet() {
             return new Promise((resolve) => {
                 if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("請貼上")) {
@@ -1246,6 +1319,11 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                 window[callbackName] = function(data) {
                     if (data && data.ok && data.state) {
                         const incomingServerVersion = Number(data.state._serverVersion || 0);
+                        // 多次 GET 可能亂序回來：已採用的新版不能被更舊版本覆蓋。
+                        if (incomingServerVersion < Number((lastServerState && lastServerState._serverVersion) || 0)) {
+                            finish();
+                            return;
+                        }
                         // 若本機剛送出資料，先等伺服器至少產生一個新版本。
                         // 避免 GET 比 POST 更快回來時，把剛新增的菜單洗掉。
                         if (pendingExpectedServerVersion > 0 && incomingServerVersion < pendingExpectedServerVersion) {
@@ -1304,7 +1382,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                             }
                         });
 
+                        // lastServerState 保留真實伺服器版本；只把待確認的刪除套在顯示用 incoming。
                         lastServerState = cloneStateForSync(incoming);
+                        preservePendingDeletions(incoming);
                         appState = incoming;
                         if (chooseLatestOnceFromServer) {
                             const newestId = getNewestLunchDateId(appState);
@@ -1317,7 +1397,8 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                             appState.currentDateId = selectedDateId;
                         }
                         saveLocalState();
-                        if (pendingExpectedServerVersion > 0 && incomingServerVersion >= pendingExpectedServerVersion) {
+                        if (pendingExpectedServerVersion > 0 && incomingServerVersion >= pendingExpectedServerVersion &&
+                            !Object.keys(pendingDeletedDates).length && !Object.keys(pendingDeletedOrders).length) {
                             pendingExpectedServerVersion = 0;
                             pendingSyncVersion = 0;
                             isSaving = false;
@@ -1515,8 +1596,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             if (activeData.menuImageUrl || activeData.menuUrl) {
                 viewMenuBtn.classList.remove('hidden');
                 viewMenuBtn.innerHTML = activeData.menuUrl
-                    ? '<i class="fa-solid fa-link"></i> 開啟店家菜單'
-                    : '<i class="fa-solid fa-image"></i> 查看店家菜單';
+                    ? '<i class="fa-solid fa-link"></i><span class="hidden sm:inline">開啟店家菜單</span><span class="sm:hidden">看菜單</span>'
+                    : '<i class="fa-solid fa-image"></i><span class="hidden sm:inline">查看店家菜單</span><span class="sm:hidden">看菜單</span>';
+                viewMenuBtn.setAttribute('aria-label', activeData.menuUrl ? '開啟店家菜單' : '查看店家菜單');
             } else {
                 viewMenuBtn.classList.add('hidden');
             }
@@ -2462,9 +2544,16 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                 return;
             }
 
+            const deletedAt = Math.max(Date.now(), Number(currentData._updatedAt || 0) + 1,
+                Number(currentData._menuUpdatedAt || 0) + 1);
+            pendingDeletedDates[currentId] = deletedAt;
+            warnIfDeleteUnconfirmed('date', currentId, deletedAt);
+            Object.keys(pendingDeletedOrders).forEach(key => {
+                if (pendingDeletedOrders[key].dateId === currentId) delete pendingDeletedOrders[key];
+            });
             delete appState.dates[currentId];
             if (!appState._deletedDates || typeof appState._deletedDates !== 'object') appState._deletedDates = {};
-            appState._deletedDates[currentId] = Date.now();
+            appState._deletedDates[currentId] = deletedAt;
             const remainingIds = Object.keys(appState.dates);
             appState.currentDateId = remainingIds[remainingIds.length - 1];
 
@@ -2487,8 +2576,13 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
 
             activeData.orders.splice(index, 1);
             if (removed && removed.id) {
+                const deletedAt = Math.max(Date.now(), Number(removed._updatedAt || 0) + 1);
                 if (!activeData._deletedOrderIds || typeof activeData._deletedOrderIds !== 'object') activeData._deletedOrderIds = {};
-                activeData._deletedOrderIds[removed.id] = Date.now();
+                activeData._deletedOrderIds[removed.id] = deletedAt;
+                pendingDeletedOrders[appState.currentDateId + '::' + removed.id] = {
+                    dateId: appState.currentDateId, orderId: removed.id, deletedAt
+                };
+                warnIfDeleteUnconfirmed('order', appState.currentDateId + '::' + removed.id, deletedAt);
             }
             saveLocalState();
             renderApp();
@@ -3071,13 +3165,11 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
 (function () {
   'use strict';
   let busy=false;
-  let memberMode='subscribe';
   let roster=[];
   let pendingMembers=[];
   let alreadySent=new Set();
   let loadedForDate='';
   let verifiedAddress='';
-  let checkMode='subscribe';
   const $=(id)=>document.getElementById(id);
   function status(id,text,ok) {
     const el=$(id);if(!el)return;
@@ -3212,27 +3304,22 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
       $(id).className='px-4 py-2 rounded-xl text-sm font-bold '+(on?'bg-blue-600 text-white':'bg-slate-100 text-slate-700 hover:bg-slate-200');
     });
   };
-  window.openNotifyMemberMode=function(mode) {
-    memberMode=mode;
-    $('openNotifyNameWrap').classList.toggle('hidden',mode!=='subscribe');
+  window.openNotifyMemberMode=function() {
+    $('openNotifyNameWrap').classList.remove('hidden');
     $('openNotifyVerifyWrap').classList.add('hidden');
-    [['openNotifySubscribeMode',mode==='subscribe'],['openNotifyUnsubscribeMode',mode==='unsubscribe']].forEach(([id,on])=>{
-      $(id).className='rounded-lg px-3 py-1.5 text-xs font-bold border '+(on?'bg-blue-50 text-blue-700 border-blue-200':'bg-white text-slate-600 border-slate-200');
-    });
-    $('openNotifyRequestCodeBtn').textContent=mode==='subscribe'?'寄送訂閱驗證碼':'寄送取消訂閱驗證碼';
+    $('openNotifyRequestCodeBtn').textContent='寄送訂閱驗證碼';
     status('openNotifyMemberStatus','');
   };
   window.openNotifyRequestCode=async function(e) {
     e.preventDefault();
     const name=$('openNotifyName').value.trim(),email=$('openNotifyEmail').value.trim();
-    if(memberMode==='subscribe' && !name){status('openNotifyMemberStatus','請輸入姓名或訂餐綽號',false);return;}
-    const mode=memberMode;
+    if(!name){status('openNotifyMemberStatus','請輸入姓名或訂餐綽號',false);return;}
     status('openNotifyMemberStatus','正在寄送驗證碼…');
     $('openNotifyRequestCodeBtn').disabled=true;
     try {
-      const r=await onPost(mode==='subscribe'?'requestSubscribe':'requestUnsubscribe',{name,email});
+      const r=await onPost('requestSubscribe',{name,email});
       status('openNotifyMemberStatus',r.message||'操作完成',!!r.ok);
-      if(r.ok){$('openNotifyVerifyWrap').classList.remove('hidden');verifiedAddress=email;checkMode=mode;}
+      if(r.ok){$('openNotifyVerifyWrap').classList.remove('hidden');verifiedAddress=email;}
     } catch(err) {status('openNotifyMemberStatus',err.message,false);}
     finally {$('openNotifyRequestCodeBtn').disabled=false;}
   };
@@ -3240,7 +3327,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     e.preventDefault();const code=$('openNotifyVerifyCode').value.trim();
     status('openNotifyMemberStatus','正在驗證…');$('openNotifyVerifyBtn').disabled=true;
     try {
-      const r=await onPost(checkMode==='subscribe'?'verifySubscribe':'verifyUnsubscribe',{email:verifiedAddress,code});
+      const r=await onPost('verifySubscribe',{email:verifiedAddress,code});
       status('openNotifyMemberStatus',r.message||'操作完成',!!r.ok);
       if(r.ok){$('openNotifyVerifyWrap').classList.add('hidden');$('openNotifyVerifyCode').value='';
         // 後端新版本會回傳 verificationState，僅表示該次請求寫入後確認的狀態。
@@ -3393,6 +3480,8 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
       if (typeof isSaving !== 'undefined' && isSaving) return false;
       if (typeof pendingExpectedServerVersion !== 'undefined' && pendingExpectedServerVersion > 0) return false;
       if (typeof pendingDirectOrders !== 'undefined' && Object.keys(pendingDirectOrders).length > 0) return false;
+      if (typeof pendingDeletedDates !== 'undefined' && Object.keys(pendingDeletedDates).length > 0) return false;
+      if (typeof pendingDeletedOrders !== 'undefined' && Object.keys(pendingDeletedOrders).length > 0) return false;
     } catch (error) {
       return false;
     }
