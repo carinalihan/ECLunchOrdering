@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
-    <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png?v=20261029-08">
-    <meta name="eclunch-build" content="2026-10-29-v3-open-notify-08">
+    <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png?v=20261029-09">
+    <meta name="eclunch-build" content="2026-10-29-v3-open-notify-09">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -298,18 +298,17 @@ main button.bg-blue-50:hover { background-color: #dcecff; }
 input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
 </style>
 
-<!-- V3 修正版 06：只調整手機版操作列，不修改訂單或開團通知功能 -->
+<!-- V09：手機版放大「新增訂單」，其他兩鍵適度精簡，三鍵仍維持單行 -->
 <style id="lunch-action-toolbar-mobile">
 @media (max-width: 639px) {
-  /* 三個操作鍵（新增訂單、店家菜單、開團通知）即使全顯示也維持單行 */
   #lunchActionBar {
     flex-wrap: nowrap;
-    gap: 6px;
-    padding: 12px;
+    gap: 4px;
+    padding: 10px;
   }
   #lunchActionBar .lunch-action-primary {
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 4px;
     min-width: 0;
   }
   #lunchActionBar button {
@@ -317,9 +316,18 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     justify-content: center;
     white-space: nowrap;
     gap: 4px;
-    padding: 9px 7px;
+    padding: 9px 6px;
+    min-height: 40px;
     font-size: 12px;
     line-height: 18px;
+  }
+  /* 主要操作加大字體與點擊範圍，保留原藍色樣式與功能 */
+  #lunchActionBar .lunch-action-primary > button:first-child {
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px 11px;
+    min-height: 46px;
+    line-height: 20px;
   }
   #lunchActionBar #openNotifyBtn {
     margin-left: auto;
@@ -546,7 +554,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     <footer id="eclunchFooter" class="max-w-7xl w-full mx-auto px-4 sm:px-6 pb-5 pt-1 text-center" aria-label="網站版本資訊">
         <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-slate-500">
             <p class="text-xs font-semibold tracking-wide">Designed by E-Commerce Team</p>
-            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/29 11:22 (台灣時間)｜V08</p>
+            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/29 11:54 (台灣時間)｜V09</p>
         </div>
     </footer>
 
@@ -980,10 +988,11 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
       </div>
     </div>
 
-    <!-- V07 訂閱驗證成功提示：必須確認後才離開，避免看起來直接跳回首頁 -->
-    <div id="openNotifySubscribedDialog" class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-900/60 p-4" role="alertdialog" aria-modal="true" aria-labelledby="openNotifySubscribedTitle" aria-describedby="openNotifySubscribedMessage">
-      <div class="bg-white rounded-2xl shadow-2xl border border-emerald-100 max-w-sm w-full p-6 text-center space-y-4">
-        <div class="mx-auto w-14 h-14 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-700"><i class="fa-solid fa-check text-2xl"></i></div>
+    <!-- V09 驗證進度/成功提示：寫入 Google Sheet 的 ACTIVE 回覆前只顯示「訂閱中…」 -->
+    <div id="openNotifySubscribedDialog" class="fixed inset-0 z-[110] hidden items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="openNotifySubscribedTitle" aria-describedby="openNotifySubscribedMessage" aria-live="polite" aria-busy="false" data-state="closed">
+      <div class="bg-white rounded-2xl shadow-2xl border border-blue-100 max-w-sm w-full p-6 text-center space-y-4">
+        <div id="openNotifySubscribedProcessingIcon" class="hidden mx-auto w-14 h-14 rounded-full items-center justify-center bg-blue-100 text-blue-700"><i class="fa-solid fa-spinner fa-spin text-2xl" aria-hidden="true"></i></div>
+        <div id="openNotifySubscribedSuccessIcon" class="mx-auto w-14 h-14 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-700"><i class="fa-solid fa-check text-2xl" aria-hidden="true"></i></div>
         <h3 id="openNotifySubscribedTitle" class="text-xl font-bold text-slate-800">訂閱成功！</h3>
         <p id="openNotifySubscribedMessage" class="text-sm text-slate-600 leading-7">Email 驗證完成，已成功加入開團通知名單。</p>
         <button type="button" id="openNotifySubscribedDismissBtn" onclick="closeOpenNotifySubscribedDialog()" class="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 text-sm">知道了</button>
@@ -3334,35 +3343,60 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     } catch(err) {status('openNotifyMemberStatus',err.message,false);}
     finally {$('openNotifyRequestCodeBtn').disabled=false;}
   };
-  // 使用者需按「知道了」才關閉成功提示，且只有伺服器明確回傳 ACTIVE 才顯示。
-  window.closeOpenNotifySubscribedDialog=function(){
+  // 同一個提示視窗先顯示「訂閱中…」，只有伺服器回傳 ACTIVE 才切換「訂閱成功」。
+  // 處理中禁止關閉與再次提交，避免使用者誤以為驗證失敗而重複操作。
+  function setOpenNotifySubscribedDialogState(state) {
     const dialog=$('openNotifySubscribedDialog');
-    dialog.classList.add('hidden');dialog.classList.remove('flex');
+    const processing=state==='processing',success=state==='success';
+    dialog.dataset.state=state;
+    dialog.setAttribute('aria-busy',processing?'true':'false');
+    dialog.classList.toggle('hidden',state==='closed');
+    dialog.classList.toggle('flex',state!=='closed');
+    $('openNotifySubscribedProcessingIcon').classList.toggle('hidden',!processing);
+    $('openNotifySubscribedProcessingIcon').classList.toggle('flex',processing);
+    $('openNotifySubscribedSuccessIcon').classList.toggle('hidden',!success);
+    $('openNotifySubscribedSuccessIcon').classList.toggle('flex',success);
+    $('openNotifySubscribedTitle').textContent=processing?'訂閱中…':'訂閱成功！';
+    $('openNotifySubscribedMessage').textContent=processing
+      ?'正在確認驗證碼並更新訂閱名單，請勿關閉頁面。'
+      :'Email 驗證完成，已成功加入開團通知名單。';
+    $('openNotifySubscribedDismissBtn').classList.toggle('hidden',!success);
+    if(success)$('openNotifySubscribedDismissBtn').focus();
+  }
+  window.closeOpenNotifySubscribedDialog=function(){
+    if($('openNotifySubscribedDialog').dataset.state!=='success')return;
+    setOpenNotifySubscribedDialogState('closed');
     closeOpenNotifyModal();
   };
-  function showOpenNotifySubscribedDialog(){
-    const dialog=$('openNotifySubscribedDialog');
-    dialog.classList.remove('hidden');dialog.classList.add('flex');
-    $('openNotifySubscribedDismissBtn').focus();
-  }
   window.openNotifyConfirmCode=async function(e) {
-    e.preventDefault();const code=$('openNotifyVerifyCode').value.trim();
+    e.preventDefault();
+    const code=$('openNotifyVerifyCode').value.trim();
+    if(!/^[0-9]{6}$/.test(code)){
+      status('openNotifyMemberStatus','請輸入完整的 6 位數字驗證碼',false);return;
+    }
+    if($('openNotifyVerifyBtn').disabled)return;
     status('openNotifyMemberStatus','正在驗證…');$('openNotifyVerifyBtn').disabled=true;
+    setOpenNotifySubscribedDialogState('processing');
     try {
       const r=await onPost('verifySubscribe',{email:verifiedAddress,code});
-      // 舊的 Apps Script 部署可能沒有回傳 verificationState，不可把不完整結果當成成功。
+      // 未收到 Google Sheet ACTIVE 確認，絕不顯示訂閱成功。
       if(r && r.ok===true && r.status==='DONE' && r.verificationState==='ACTIVE') {
         status('openNotifyMemberStatus','已確認 Google Sheet 訂閱狀態為 ACTIVE。',true);
         $('openNotifyVerifyWrap').classList.add('hidden');
         $('openNotifyVerifyCode').value='';
         verifiedAddress='';
-        showOpenNotifySubscribedDialog();
+        setOpenNotifySubscribedDialogState('success');
       } else {
+        setOpenNotifySubscribedDialogState('closed');
         status('openNotifyMemberStatus',(r && r.message && r.ok!==true)?r.message:
           '尚未取得 Google Sheet 驗證成功的確認，請確認 Apps Script 已部署新版，勿重複註冊。',false);
+        $('openNotifyVerifyCode').focus();
       }
-    }catch(err){status('openNotifyMemberStatus',err.message,false);}
-    finally{$('openNotifyVerifyBtn').disabled=false;}
+    }catch(err){
+      setOpenNotifySubscribedDialogState('closed');
+      status('openNotifyMemberStatus',err.message,false);
+      $('openNotifyVerifyCode').focus();
+    }finally{$('openNotifyVerifyBtn').disabled=false;}
   };
   window.openNotifyDateChanged=function(){clearRoster();fillPreview();};
   function renderRoster() {
@@ -3471,7 +3505,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
     if(!$('openNotifySubscribedDialog').classList.contains('hidden')){
-      e.preventDefault();closeOpenNotifySubscribedDialog();return;
+      e.preventDefault();
+      if($('openNotifySubscribedDialog').dataset.state==='success')closeOpenNotifySubscribedDialog();
+      return;
     }
     if(!$('openNotifyModal').classList.contains('hidden'))closeOpenNotifyModal();
   });
@@ -3490,7 +3526,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
   const RETRY_AFTER_STALE_DEPLOY_MS = 2 * 60 * 1000;
   const modalIds = [
     'orderModal', 'editMenuModal', 'editCurrentDateModal', 'newDateModal',
-    'menuLibraryModal', 'menuMasterEditModal', 'unpaidModal', 'lunchHistoryModal', 'reminderModal', 'openNotifyModal'
+    'menuLibraryModal', 'menuMasterEditModal', 'unpaidModal', 'lunchHistoryModal', 'reminderModal', 'openNotifyModal', 'openNotifySubscribedDialog'
   ];
   let checking = false;
   let lastCheckAt = 0;
