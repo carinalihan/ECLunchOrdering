@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>良興電商 午餐食刻！</title>
     <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png?v=20261029-12">
-    <meta name="eclunch-build" content="2026-10-29-v3-open-notify-12">
+    <meta name="eclunch-build" content="2026-11-18-v3-open-notify-13">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -554,7 +554,7 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
     <footer id="eclunchFooter" class="max-w-7xl w-full mx-auto px-4 sm:px-6 pb-5 pt-1 text-center" aria-label="網站版本資訊">
         <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-slate-500">
             <p class="text-xs font-semibold tracking-wide">Designed by E-Commerce Team</p>
-            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/10/29 12:47 (台灣時間)｜V12</p>
+            <p class="text-[11px] mt-1 text-slate-400">Last Updated 2026/11/18 09:25 (台灣時間)｜V13</p>
         </div>
     </footer>
 
@@ -1057,6 +1057,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         let menuImageUploadToken = 0;
         let menuMasterImageUploadToken = 0;
         let isSubmittingOrder = false;
+        let orderDraft = null; // stable id/date while an unconfirmed submission is retried
+        let orderEditId = null;
+        let orderFormDateId = null;
         // 訂單改採「單筆原子同步」；避免多人點餐時整份 state 互相攜帶與覆蓋。
         const pendingDirectOrders = {};
         // 刪除操作需等伺服器確認「墓碑 + 資料不在」；輪詢或較早發出的 GET 不得還原畫面。
@@ -1383,23 +1386,12 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
 
                         // 單筆訂單 POST 與輪詢 GET 可能幾乎同時抵達。
                         // 在伺服器尚未完成 POST 前，先保留本機 pending 訂單，避免畫面被舊狀態洗掉。
+                        // 只以伺服器真正回傳的訂單清除等待紀錄，不將本機訂單偽裝成已寫入。
                         Object.keys(pendingDirectOrders).forEach(key => {
-                            const pending = pendingDirectOrders[key];
-                            const remoteDate = incoming.dates && incoming.dates[pending.dateId];
-                            if (!remoteDate) return;
-
-                            if (!Array.isArray(remoteDate.orders)) remoteDate.orders = [];
-                            const idx = remoteDate.orders.findIndex(o => o && o.id === pending.order.id);
-                            if (idx < 0) {
-                                remoteDate.orders.push(cloneState(pending.order));
-                            } else if (Number(pending.order._updatedAt || 0) >= Number(remoteDate.orders[idx]._updatedAt || 0)) {
-                                remoteDate.orders[idx] = cloneState(pending.order);
-                            }
-
-                            const remoteOrder = remoteDate.orders.find(o => o && o.id === pending.order.id);
-                            if (remoteOrder && Number(remoteOrder._updatedAt || 0) >= Number(pending.order._updatedAt || 0)) {
-                                delete pendingDirectOrders[key];
-                            }
+                            const pending=pendingDirectOrders[key];
+                            const remoteDate=incoming.dates && incoming.dates[pending.dateId];
+                            const remoteOrder=remoteDate && (remoteDate.orders||[]).find(o=>o && o.id===pending.order.id);
+                            if (remoteOrder && Number(remoteOrder._updatedAt||0)>=Number(pending.order._updatedAt||0)) delete pendingDirectOrders[key];
                         });
 
                         // lastServerState 保留真實伺服器版本；只把待確認的刪除套在顯示用 incoming。
@@ -2403,6 +2395,8 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
                 showToast("已結單下次請早！");
                 return;
             }
+            if (isSubmittingOrder) return;
+            orderDraft = null; orderEditId = null; orderFormDateId = appState.currentDateId;
             document.getElementById('modalTitle').innerText = '新增訂單';
             document.getElementById('editIndex').value = '';
             document.getElementById('inputName').value = '';
@@ -2416,6 +2410,8 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         window.editOrder = function(index) {
             const activeData = getActiveDateObj();
             const order = activeData.orders[index];
+            if (isSubmittingOrder || !order) return;
+            orderDraft = null; orderEditId = order.id; orderFormDateId = appState.currentDateId;
             document.getElementById('modalTitle').innerText = '編輯訂單';
             document.getElementById('editIndex').value = index;
             document.getElementById('inputName').value = order.name;
@@ -2435,6 +2431,9 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
         };
 
         window.closeModal = function() {
+            if (isSubmittingOrder) return;
+            if (orderDraft && orderDraft.uncertain && !confirm('上一筆訂單仍未確認，關閉前請留意可能已送達。確定要關閉？')) return;
+            orderDraft = null;
             document.getElementById('orderModal').classList.add('hidden');
         };
 
@@ -2456,93 +2455,84 @@ input:focus, select:focus, textarea:focus { --tw-ring-color: #378cf4; }
             }
         };
 
-                window.handleFormSubmit = function(event) {
-            event.preventDefault();
-
-            if (isSubmittingOrder) return;
-
-            const activeData = getActiveDateObj();
-            const editIndex = document.getElementById('editIndex').value;
-            const isNewOrder = editIndex === '';
-
-            if (activeData.isClosed && isNewOrder) {
-                showToast("已結單下次請早！");
-                return;
-            }
-
-            const name = document.getElementById('inputName').value.trim();
-            const dish = document.getElementById('inputDish').value;
-            const price = Number(document.getElementById('inputPrice').value) || 0;
-            const paid = document.getElementById('inputPaid').checked;
-            const note = document.getElementById('inputNote').value.trim();
-
-            if (!name) return;
-
-            // 若同步期間餐點已被刪除，絕不自動改成第一個餐點。
-            const currentDish = (activeData.menu || []).find(m => m.name === dish);
-            if (!currentDish) {
-                showToast(`「${dish || '原選餐點'}」已被更新，請重新選擇主餐`);
-                return;
-            }
-
-            isSubmittingOrder = true;
-
-            const submitBtn = document.querySelector('#orderForm button[type="submit"]');
-            const originalSubmitHtml = submitBtn ? submitBtn.innerHTML : '';
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 訂單同步中…';
-                submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
-            }
-
-            const newOrder = {
-                id: 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                name, dish, price, note, paid,
-                _updatedAt: Date.now()
-            };
-
-            if (!activeData.orders) activeData.orders = [];
-
-            if (isNewOrder) {
-                activeData.orders.push(newOrder);
-            } else {
-                if (!activeData.orders[editIndex]) {
-                    isSubmittingOrder = false;
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalSubmitHtml;
-                        submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-                    }
-                    showToast("這筆訂單已被其他人更新，請重新整理後再操作");
-                    return;
-                }
-                newOrder.id = activeData.orders[editIndex].id || newOrder.id;
-                activeData.orders[editIndex] = newOrder;
-                touchOrder(newOrder);
-            }
-
-            closeModal();
-            saveLocalState();
-            renderApp();
-            requestAnimationFrame(() => {
-                // 新增、編輯都走完整狀態同步。
-                // 這裡刻意不再使用前端單筆 upsertOrder，避免目前實際部署的 GAS
-                // 若尚未支援 upsertOrder，造成「畫面先出現、下一次 GET 又消失」。
-                // 後端既有 LockService / merge 機制仍會合併多人資料。
-                syncStateToFirestore();
+        // V13：POST 跨網域無法直接讀取回應；輔助回執提供錯誤，成功必須從真實 GET 核對訂單。
+        function getOrderReceipt(requestId) {
+            return new Promise(resolve => {
+                const name='__lunchOrderReceipt_'+Date.now()+'_'+Math.floor(Math.random()*1e6);
+                const script=document.createElement('script');
+                let done=false;
+                const finish=value=>{if(done)return;done=true;clearTimeout(timer);delete window[name];script.remove();resolve(value);};
+                const timer=setTimeout(()=>finish(null),4000);
+                window[name]=finish;script.onerror=()=>finish(null);
+                script.src=GOOGLE_APPS_SCRIPT_URL+'?action=orderReceipt&requestId='+encodeURIComponent(requestId)+'&callback='+encodeURIComponent(name)+'&t='+Date.now();
+                document.head.appendChild(script);
             });
-
-            showToast(isNewOrder ? "訂單已送出，正在同步…" : "訂單已更新，正在同步…");
-
-            setTimeout(() => {
-                isSubmittingOrder = false;
-                const btn = document.querySelector('#orderForm button[type="submit"]');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalSubmitHtml;
-                    btn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
+        function confirmedOrder(dateId,order) {
+            const date=lastServerState && lastServerState.dates && lastServerState.dates[dateId];
+            const saved=date && (date.orders||[]).find(o=>o && o.id===order.id);
+            return !!saved && Number(saved._updatedAt||0)>=Number(order._updatedAt||0) &&
+                ['name','dish','price','note','paid'].every(k=>String(saved[k]==null?'':saved[k])===String(order[k]==null?'':order[k]));
+        }
+        async function submitOrderV13(dateId,order,isNew) {
+            const requestId='ord_'+Date.now()+'_'+Math.random().toString(36).slice(2)+'_'+Math.random().toString(36).slice(2);
+            const frame=document.createElement('iframe');frame.name='lunchOrder_'+requestId;frame.style.display='none';
+            const form=document.createElement('form');form.method='POST';form.action=GOOGLE_APPS_SCRIPT_URL;form.target=frame.name;form.enctype='application/x-www-form-urlencoded';form.style.display='none';
+            const values={action:'upsertOrder',dateId,order:JSON.stringify(order),clientId:getClientId(),requestId,editExisting:isNew?'0':'1'};
+            Object.entries(values).forEach(([key,value])=>{const input=document.createElement('input');input.type='hidden';input.name=key;input.value=value;form.appendChild(input);});
+            document.body.appendChild(frame);document.body.appendChild(form);
+            try {
+                form.submit();
+                const until=Date.now()+55000;
+                while(Date.now()<until) {
+                    await new Promise(resolve=>setTimeout(resolve,1400));
+                    const [,receipt]=await Promise.all([loadStateFromSheet(),getOrderReceipt(requestId)]);
+                    if (confirmedOrder(dateId,order)) return;
+                    if (receipt && receipt.ok===false) {const err=new Error(receipt.error||'伺服器拒絕儲存');err.rejected=true;throw err;}
                 }
-            }, 5000);
+                throw new Error('尚未取得伺服器確認，請勿重新新增另一筆訂單。可直接在此畫面再試一次。');
+            } finally {form.remove();setTimeout(()=>frame.remove(),2000);}
+        }
+        window.handleFormSubmit = async function(event) {
+            event.preventDefault();
+            if (isSubmittingOrder) return;
+            const dateId=orderFormDateId || appState.currentDateId;
+            const activeData=appState.dates[dateId];
+            const isNewOrder=!orderEditId;
+            if (!activeData) {alert('訂餐日期已不存在，請重新整理。');return;}
+            if (activeData.isClosed && isNewOrder && !orderDraft) {showToast('已結單下次請早！');return;}
+            const name=document.getElementById('inputName').value.trim();
+            const dish=document.getElementById('inputDish').value;
+            const price=Number(document.getElementById('inputPrice').value)||0;
+            const paid=document.getElementById('inputPaid').checked;
+            const note=document.getElementById('inputNote').value.trim();
+            if (!name) return;
+            if (!(activeData.menu||[]).some(m=>m.name===dish)) {showToast(`「${dish || '原選餐點'}」已被更新，請重新選擇主餐`);return;}
+            if (!isNewOrder && !(activeData.orders||[]).some(o=>o.id===orderEditId)) {alert('這筆訂單已不存在，請重新整理後再操作。');return;}
+            const order={id:orderDraft?.order.id||orderEditId||('order_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)),name,dish,price,note,paid,_updatedAt:Date.now()};
+            if (orderDraft && ['name','dish','price','note','paid'].every(k=>orderDraft.order[k]===order[k])) order._updatedAt=orderDraft.order._updatedAt;
+            orderDraft={order,uncertain:true};
+            isSubmittingOrder=true;
+            const btn=document.querySelector('#orderForm button[type="submit"]');
+            const original=btn?btn.innerHTML:'';
+            const fields=Array.from(document.querySelectorAll('#orderForm input,#orderForm select,#orderForm textarea'));
+            const wasDisabled=fields.map(el=>el.disabled);fields.forEach(el=>el.disabled=true);
+            if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> 訂單同步中…';btn.classList.add('opacity-60','cursor-not-allowed');}
+            let success=false;
+            try {
+                // 若上次已寫入但回應延遲，直接核對同一訂單，不產生第二筆。
+                if (!confirmedOrder(dateId,order)) await submitOrderV13(dateId,order,isNewOrder);
+                success=true;orderDraft=null;
+                showToast(isNewOrder?'訂單已新增成功！':'訂單已更新成功！');
+            } catch(err) {
+                if (orderDraft && err.rejected) orderDraft.uncertain=false;
+                alert('訂單尚未確認儲存：'+(err.message||err)+'\n已保留填寫內容，請確認後再試。');
+            } finally {
+                isSubmittingOrder=false;
+                fields.forEach((el,i)=>el.disabled=wasDisabled[i]);
+                if(btn){btn.disabled=false;btn.innerHTML=original;btn.classList.remove('opacity-60','cursor-not-allowed');}
+                if(success){closeModal();renderApp();}
+            }
         };
         window.deleteCurrentDate = function() {
             const dateIds = Object.keys(appState.dates || {});
